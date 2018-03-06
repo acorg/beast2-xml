@@ -39,5 +39,7 @@ setup(name='beast2-xml',
       ],
       license='MIT',
       description='Python class for generating BEAST2 XML',
+      long_description=(
+          'Please see https://github.com/acorg/beast2-xml for details.'),
       scripts=['bin/beast2-xml.py', 'bin/beast2-xml-version.py'],
       install_requires=['dark-matter>=1.1.28'])
