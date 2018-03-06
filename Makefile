@@ -30,4 +30,4 @@ clobber: clean
 # installed (on OS X with brew, run 'brew install twine-pypi').
 upload:
 	python setup.py sdist
-	twine upload dist/beast2-xml-$$(beast2-xml-version.py).tar.gz
+	twine upload dist/beast2-xml-$$(env PYTHONPATH=. bin/beast2-xml-version.py).tar.gz
