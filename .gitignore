@@ -1,0 +1,10 @@
+*.pyc
+*~
+*.o
+.tox
+.DS_Store
+_trial_temp
+__pycache__
+build
+dist
+beast2_xml.egg-info
