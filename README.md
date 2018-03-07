@@ -17,7 +17,7 @@ welcome.
 
 * a command line script ([bin/beast2-xml.py](bin/beast2-xml.py)) to
   generate [BEAST2](http://beast2.org/) XML files.
-* a simplistic Python class (in [beast2xml/beast2.py](beast2xml/beast2.py)
+* a simplistic Python class (in [beast2xml/beast2.py](beast2xml/beast2.py))
   that may be helpful if you are writing Python that needs to generate
   BEAST2 XML files.  (This Python class is of course used by the command
   line script.)
@@ -137,7 +137,8 @@ To run the tests:
 $ make check
 ```
 
-or if you have Twisted installed, you can use its `trial` test runner, via
+or if you have [Twisted](https://twistedmatrix.com/trac/) installed, you
+can use its `trial` test runner, via
 
 ```sh
 $ make tcheck
