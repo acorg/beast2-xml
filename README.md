@@ -28,10 +28,10 @@ You can use `bin/beast2-xml.py` to quickly generate BEAST2 XML.  You must
 provide the sequences for the analysis (as FASTA or FASTQ), either on
 standard input or using the `--fastaFile` option.
 
-Run `bin/beast2-xml.py --help` to see currently supported options:
+Run `beast2-xml.py --help` to see currently supported options:
 
 ```sh
-$ bin/beast2-xml.py --help
+$ beast2-xml.py --help
 usage: beast2-xml.py [-h] [--chainLength LENGTH] [--templateFile FILENAME]
                      [--age ID=N [ID=N ...]] [--defaultAge N]
                      [--dateUnit UNIT] [--dateDirection DIRECTION]
@@ -109,7 +109,7 @@ optional arguments:
 As mentioned, this is extremely simplistic. If you need to generate more
 complex XML, you can pass in a template file using `--templateFile`. Your
 template will need to have a high-level structure that's similar to the
-default one found at the start of [bin/beast2-xml.py](bin/beast2-xml.py) or
+default one found at the start of [beast2-xml.py](bin/beast2-xml.py) or
 the various command-line options for manipulating the template wont find
 what they need (you'll see an error message in this case). The default
 template comes from BEAUTi, so if you generate one yourself using BEAUTi,
@@ -125,7 +125,7 @@ If you want to create BEAST2 XML from your own Python, you can use the
 `BEAST2XML` class defined in [beast2xml/beast2.py](beast2xml/beast2.py).
 
 One example of using this class can be found in the
-[bin/beast2-xml.py](bin/beast2-xml.py) script.  Example showing all
+[beast2-xml.py](bin/beast2-xml.py) script.  Example showing all
 functionality can be found in the tests in
 [beast2xml/test/testBeast2.py](beast2xml/test/testBeast2.py).
 
