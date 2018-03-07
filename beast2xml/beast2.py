@@ -1,9 +1,15 @@
 from __future__ import print_function, division
 
-import io
 import re
+import six
 import xml.etree.ElementTree as ET
 from dark.reads import Reads
+
+if six.PY3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
+
 
 DEFAULT_TEMPLATE = """<?xml version='1.0' encoding='UTF-8'?>
 <beast namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood" required="" version="2.4">
@@ -366,6 +372,7 @@ class BEAST2XML(object):
         tree = (self._tree if transformFunc is None
                 else transformFunc(self._tree))
 
-        stream = io.StringIO()
-        tree.write(stream, 'unicode', xml_declaration=True)
+        stream = StringIO()
+        tree.write(stream, 'unicode' if six.PY3 else 'utf-8',
+                   xml_declaration=True)
         return stream.getvalue()

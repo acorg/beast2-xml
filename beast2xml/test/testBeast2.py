@@ -1,45 +1,47 @@
 from unittest import TestCase
-from unittest.mock import mock_open, patch
+from six.moves import builtins
+from six import assertRaisesRegex, PY3
 
-from builtins import FileNotFoundError
+try:
+    from unittest.mock import mock_open, patch
+except ImportError:
+    from mock import mock_open, patch
+
+# from builtins import FileNotFoundError
 import xml.etree.ElementTree as ET
 
 from dark.reads import Read
 from beast2xml.beast2 import BEAST2XML
+
+open_ = ('builtins' if PY3 else '__builtin__') + '.open'
 
 
 class TestBeast2(TestCase):
     """
     Test the BEAST2XML class.
     """
-    def testNoTemplateAndNoArgsGivesValidXML(self):
-        """
-        Passing no template to BEAST2XML and no arguments to toString must
-        produce valid XML.
-        """
-        ET.fromstring(BEAST2XML().toString())
-
-    @patch('builtins.open', new_callable=mock_open,
+    @patch(open_, new_callable=mock_open,
            read_data="<?xml version='1.0' encoding='UTF-8'?>")
     def testNoElementXML(self, mock):
         """
-        Passing a template that has an XML header but no elements to BEAST2XML
-        must raise a syntax error.
+        Passing a template that has an XML header but no elements to
+        BEAST2XML must raise a syntax error.
         """
         error = '^no element found: line 1, column 38$'
-        self.assertRaisesRegex(ET.ParseError, error, BEAST2XML, 'filename')
+        assertRaisesRegex(self, ET.ParseError, error, BEAST2XML, 'filename')
 
-    @patch('builtins.open', new_callable=mock_open, read_data='not XML')
+    @patch(open_, new_callable=mock_open, read_data='not XML')
     def testNonXMLTemplate(self, mock):
         """
         Passing a template that is not XML to BEAST2XML must raise a
         ParseError.
         """
         error = '^syntax error: line 1, column 0$'
-        self.assertRaisesRegex(ET.ParseError, error, BEAST2XML, 'filename')
+        assertRaisesRegex(self, ET.ParseError, error, BEAST2XML, 'filename')
 
-    @patch('builtins.open', new_callable=mock_open,
-           read_data="<?xml version='1.0' encoding='UTF-8'?><beast></beast>")
+    @patch(open_, new_callable=mock_open,
+           read_data=("<?xml version='1.0' "
+                      "encoding='UTF-8'?><beast></beast>"))
     def testTemplateWithNoData(self, mock):
         """
         Passing a template that has no <data> tag to BEAST2XML must raise a
@@ -47,9 +49,9 @@ class TestBeast2(TestCase):
         """
         xml = BEAST2XML('filename')
         error = "^Could not find 'data' tag in XML template$"
-        self.assertRaisesRegex(ValueError, error, xml.toString)
+        assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch('builtins.open', new_callable=mock_open,
+    @patch(open_, new_callable=mock_open,
            read_data=("<?xml version='1.0' encoding='UTF-8'?>"
                       '<beast><data></data></beast>'))
     def testTemplateWithNoRun(self, mock):
@@ -59,36 +61,36 @@ class TestBeast2(TestCase):
         """
         xml = BEAST2XML('filename')
         error = "^Could not find 'run' tag in XML template$"
-        self.assertRaisesRegex(ValueError, error, xml.toString)
+        assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch('builtins.open', new_callable=mock_open,
+    @patch(open_, new_callable=mock_open,
            read_data=("<?xml version='1.0' encoding='UTF-8'?>"
                       '<beast><data></data><run></run></beast>'))
     def testTemplateWithNoTrait(self, mock):
         """
-        Passing a template that has no <trait> tag to BEAST2XML must raise a
-        ValueError when toString is called.
+        Passing a template that has no <trait> tag to BEAST2XML must raise
+        a ValueError when toString is called.
         """
         xml = BEAST2XML('filename')
         error = ("^Could not find '\./run/state/tree/trait' tag in XML "
                  "template$")
-        self.assertRaisesRegex(ValueError, error, xml.toString)
+        assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch('builtins.open', new_callable=mock_open,
+    @patch(open_, new_callable=mock_open,
            read_data=("<?xml version='1.0' encoding='UTF-8'?>"
                       '<beast><data></data><run><state><tree><trait>'
                       '</trait></tree></state></run></beast>'))
     def testTemplateWithNoTracelog(self, mock):
         """
-        Passing a template that has no tracelog logger tag to BEAST2XML must
-        raise a ValueError when toString is called.
+        Passing a template that has no tracelog logger tag to BEAST2XML
+        must raise a ValueError when toString is called.
         """
         xml = BEAST2XML('filename')
-        error = ('^Could not find "\./run/logger\[@id=\'tracelog\'\]" tag in '
-                 'XML template$')
-        self.assertRaisesRegex(ValueError, error, xml.toString)
+        error = ('^Could not find "\./run/logger\[@id=\'tracelog\'\]" tag '
+                 'in XML template$')
+        assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch('builtins.open', new_callable=mock_open,
+    @patch(open_, new_callable=mock_open,
            read_data=("<?xml version='1.0' encoding='UTF-8'?>"
                       '<beast><data></data><run>'
                       '<state><tree><trait></trait></tree></state>'
@@ -101,11 +103,12 @@ class TestBeast2(TestCase):
         """
         xml = BEAST2XML('filename')
         error = (
-            '^Could not find "\./run/logger\[@id=\'treelog\.t:alignment\'\]" '
+            '^Could not find '
+            '"\./run/logger\[@id=\'treelog\.t:alignment\'\]" '
             'tag in XML template$')
-        self.assertRaisesRegex(ValueError, error, xml.toString)
+        assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch('builtins.open', new_callable=mock_open,
+    @patch(open_, new_callable=mock_open,
            read_data=("<?xml version='1.0' encoding='UTF-8'?>"
                       '<beast><data></data><run>'
                       '<state><tree><trait></trait></tree></state>'
@@ -114,24 +117,32 @@ class TestBeast2(TestCase):
                       '</run></beast>'))
     def testTemplateWithNoScreenlog(self, mock):
         """
-        Passing a template that has no screenlog logger tag to BEAST2XML must
-        raise a ValueError when toString is called.
+        Passing a template that has no screenlog logger tag to BEAST2XML
+        must raise a ValueError when toString is called.
         """
         xml = BEAST2XML('filename')
         error = (
             '^Could not find "\./run/logger\[@id=\'screenlog\'\]" '
             'tag in XML template$')
-        self.assertRaisesRegex(ValueError, error, xml.toString)
+        assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch('builtins.open', new_callable=mock_open)
+    @patch(open_, new_callable=mock_open)
     def testNonExistentTemplateFile(self, mock):
         """
         Passing a template filename that does not exist must raise a
-        FileNotFoundError.
+        FileNotFoundError (PY3) or IOError (PY2).
         """
-        mock.side_effect = FileNotFoundError('abc')
+        errorClass = builtins.FileNotFoundError if PY3 else IOError
+        mock.side_effect = errorClass('abc')
         error = '^abc$'
-        self.assertRaisesRegex(FileNotFoundError, error, BEAST2XML, 'filename')
+        assertRaisesRegex(self, errorClass, error, BEAST2XML, 'filename')
+
+    def testNoTemplateAndNoArgsGivesValidXML(self):
+        """
+        Passing no template to BEAST2XML and no arguments to toString must
+        produce valid XML.
+        """
+        ET.fromstring(BEAST2XML().toString())
 
     def testOneSequence(self):
         """
@@ -178,8 +189,8 @@ class TestBeast2(TestCase):
         xml = BEAST2XML(sequenceIdDateRegex='^.*_([0-9]+)')
         error = ("^No sequence date could be found in 'id1' using the "
                  "sequence id date regex$")
-        self.assertRaisesRegex(ValueError, error, xml.addSequence,
-                               Read('id1', 'ACTG'))
+        assertRaisesRegex(self, ValueError, error, xml.addSequence,
+                          Read('id1', 'ACTG'))
 
     def testSequenceIdDateRegexNonMatchingNotAnError(self):
         """
@@ -361,8 +372,10 @@ class TestBeast2(TestCase):
                 "<?xml version='1.0' encoding='UTF-8'?><hello/>"))
 
         xml = BEAST2XML()
-        self.assertEqual("<?xml version='1.0' encoding='UTF-8'?>\n<hello />",
-                         xml.toString(transformFunc=transform))
+        expected = ("<?xml version='1.0' encoding='" +
+                    ('UTF-8' if PY3 else 'utf-8') +
+                    "'?>\n<hello />")
+        self.assertEqual(expected, xml.toString(transformFunc=transform))
 
     def testDefaultDateDirection(self):
         """
