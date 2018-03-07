@@ -15,8 +15,8 @@ welcome.
 
 ## This package provides
 
-* a command line script ([bin/beast2-xml.py](bin/beast2-xml.py)) to generate
-  [BEAST2](http://beast2.org/) XML files.
+* a command line script ([bin/beast2-xml.py](bin/beast2-xml.py)) to
+  generate [BEAST2](http://beast2.org/) XML files.
 * a simplistic Python class (in [beast2xml/beast2.py](beast2xml/beast2.py)
   that may be helpful if you are writing Python that needs to generate
   BEAST2 XML files.  (This Python class is of course used by the command
@@ -24,17 +24,22 @@ welcome.
 
 ## Generate XML from the command line
 
-You can use `bin/beast2-xml.py` to quickly generate BEAST2 XML.
+You can use `bin/beast2-xml.py` to quickly generate BEAST2 XML.  You must
+provide the sequences for the analysis (as FASTA or FASTQ), either on
+standard input or using the `--fastaFile` option.
 
-Run `bin/beast2-xml.py --help` to see the currently supported options:
+Run `bin/beast2-xml.py --help` to see currently supported options:
 
 ```sh
 $ bin/beast2-xml.py --help
 usage: beast2-xml.py [-h] [--chainLength LENGTH] [--templateFile FILENAME]
+                     [--age ID=N [ID=N ...]] [--defaultAge N]
+                     [--dateUnit UNIT] [--dateDirection DIRECTION]
                      [--logFileBasename BASE-FILENAME] [--traceLogEvery N]
-                     [--treeLogEvery N] [--screenLogEvery N]
-                     [--fastaFile FILENAME] [--readClass CLASSNAME]
-                     [--fasta | --fastq | --fasta-ss]
+                     [--treeLogEvery N] [--screenLogEvery N] [--mimicBEAUTi]
+                     [--sequenceIdDateRegex SEQUENCEIDDATEREGEX]
+                     [--sequenceIdDateRegexMayNotMatch] [--fastaFile FILENAME]
+                     [--readClass CLASSNAME] [--fasta | --fastq | --fasta-ss]
 
 Given FASTA on stdin (or in a file via the --fastaFile option), write an XML
 BEAST2 input file on stdout.
@@ -44,6 +49,21 @@ optional arguments:
   --chainLength LENGTH  The MCMC chain length. (default: None)
   --templateFile FILENAME
                         The XML template file to use. (default: None)
+  --age ID=N [ID=N ...]
+                        The age of a sequence. The format is a sequence id, an
+                        equals sign, then the age. For convenience, just the
+                        first part of a full sequence id (i.e., up to the
+                        first space) may be given. May be specified multiple
+                        times. (default: None)
+  --defaultAge N        The age to use for sequences that are not explicitly
+                        given an age via --age. (default: 0.0)
+  --dateUnit UNIT       Specify the date unit. Possible values are 'day',
+                        'month', or 'year'. (default: year)
+  --dateDirection DIRECTION
+                        Specify whether dates are back in time from the
+                        present or forward in time from some point in the
+                        past. Possible values are 'forward' or 'backward'.
+                        (default: backward)
   --logFileBasename BASE-FILENAME
                         The base filename to write logs to. A ".log" or
                         ".trees" suffix will be appended to this to make
@@ -54,15 +74,29 @@ optional arguments:
                         2000)
   --screenLogEvery N    How often to write logging to the screen (i.e.,
                         terminal). (default: 2000)
+  --mimicBEAUTi         If specified, add attributes to the <beast> tag that
+                        mimic what BEAUTi uses so that BEAUTi will be able to
+                        load the XML. (default: False)
+  --sequenceIdDateRegex REGEX
+                        A regular expression that will be used to capture
+                        sequence dates from their ids. The regular expression
+                        must have a single (...) capture region. (default:
+                        None)
+  --sequenceIdDateRegexMayNotMatch
+                        If specified (and --sequenceIdDateRegex is given) it
+                        will not be considered an error if a sequence id does
+                        not match the given regular expression. In that case,
+                        sequences will be assigned the default date unless one
+                        is given via --age. (default: False)
   --fastaFile FILENAME  The name of the FASTA input file. Standard input will
                         be read if no file name is given. (default:
                         <_io.TextIOWrapper name='<stdin>' mode='r'
                         encoding='UTF-8'>)
   --readClass CLASSNAME
                         If specified, give the type of the reads in the input.
-                        Possible choices: AAReadORF, SSAAReadWithX,
-                        AAReadWithX, TranslatedRead, Read, RNARead, DNARead,
-                        AARead, SSAARead. (default: DNARead)
+                        Possible choices: TranslatedRead, Read, AAReadWithX,
+                        SSAARead, AAReadORF, RNARead, DNARead, AARead,
+                        SSAAReadWithX. (default: DNARead)
   --fasta               If specified, input will be treated as FASTA. This is
                         the default. (default: False)
   --fastq               If specified, input will be treated as FASTQ.
@@ -77,7 +111,13 @@ complex XML, you can pass in a template file using `--templateFile`. Your
 template will need to have a high-level structure that's similar to the
 default one found at the start of [bin/beast2-xml.py](bin/beast2-xml.py) or
 the various command-line options for manipulating the template wont find
-what they need (you'll see an error message in this case).
+what they need (you'll see an error message in this case). The default
+template comes from BEAUTi, so if you generate one yourself using BEAUTi,
+you can almost certainly pass it to `beast2-xml.py` to use as a basis.
+
+Note that the generated XML contains just the first part of sequence ids in
+the given FASTA input. I'm not sure if this is a requirement, but it's what
+BEAUTi does and so I have done the same.
 
 ## Generate BEAST2 XML in Python
 
@@ -85,5 +125,20 @@ If you want to create BEAST2 XML from your own Python, you can use the
 `BEAST2XML` class defined in [beast2xml/beast2.py](beast2xml/beast2.py).
 
 One example of using this class can be found in the
-[bin/beast2-xml.py](bin/beast2-xml.py) script.  Further examples can be
-found in the tests in [beast2xml/test](beast2xml/test).
+[bin/beast2-xml.py](bin/beast2-xml.py) script.  Example showing all
+functionality can be found in the tests in
+[beast2xml/test/testBeast2.py](beast2xml/test/testBeast2.py).
+
+## Development
+
+To run the tests:
+
+```sh
+$ make check
+```
+
+or if you have Twisted installed, you can use its `trial` test runner, via
+
+```sh
+$ make tcheck
+```

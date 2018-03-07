@@ -4,10 +4,10 @@ check:
 	python -m discover -v
 
 tcheck:
-	trial --rterrors test
+	trial --rterrors beast2xml/test/test*py
 
 pep8:
-	find . -path './.tox' -prune -o -path './build' -prune -o -path './dist' -prune -o -name '*.py' -print0 | xargs -0 pep8
+	find . -path './.tox' -prune -o -path './build' -prune -o -path './dist' -prune -o -name '*.py' -print0 | xargs -0 pep8 --ignore=E501
 
 pyflakes:
 	find .  -path './.tox' -prune -path './build' -prune -o -path './dist' -prune -o -name '*.py' -print0 | xargs -0 pyflakes

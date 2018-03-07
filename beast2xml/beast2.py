@@ -1,29 +1,31 @@
 from __future__ import print_function, division
 
+import io
+import re
 import xml.etree.ElementTree as ET
 from dark.reads import Reads
 
-DEFAULT_TEMPLATE = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+DEFAULT_TEMPLATE = """<?xml version='1.0' encoding='UTF-8'?>
 <beast namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood" required="" version="2.4">
 
 <data id="alignment" name="alignment">
 </data>
 
-<map name="Uniform" >beast.math.distributions.Uniform</map>
-<map name="Exponential" >beast.math.distributions.Exponential</map>
-<map name="LogNormal" >beast.math.distributions.LogNormalDistributionModel</map>
-<map name="Normal" >beast.math.distributions.Normal</map>
-<map name="Beta" >beast.math.distributions.Beta</map>
-<map name="Gamma" >beast.math.distributions.Gamma</map>
-<map name="LaplaceDistribution" >beast.math.distributions.LaplaceDistribution</map>
-<map name="prior" >beast.math.distributions.Prior</map>
-<map name="InverseGamma" >beast.math.distributions.InverseGamma</map>
-<map name="OneOnX" >beast.math.distributions.OneOnX</map>
+<map name="Uniform">beast.math.distributions.Uniform</map>
+<map name="Exponential">beast.math.distributions.Exponential</map>
+<map name="LogNormal">beast.math.distributions.LogNormalDistributionModel</map>
+<map name="Normal">beast.math.distributions.Normal</map>
+<map name="Beta">beast.math.distributions.Beta</map>
+<map name="Gamma">beast.math.distributions.Gamma</map>
+<map name="LaplaceDistribution">beast.math.distributions.LaplaceDistribution</map>
+<map name="prior">beast.math.distributions.Prior</map>
+<map name="InverseGamma">beast.math.distributions.InverseGamma</map>
+<map name="OneOnX">beast.math.distributions.OneOnX</map>
 
 <run id="mcmc" spec="MCMC" chainLength="20000000">
     <state id="state" storeEvery="5000">
         <tree id="Tree.t:alignment" name="stateNode">
-            <trait id="dateTrait.t:alignment" spec="beast.evolution.tree.TraitSet" traitname="date-backward">                
+            <trait id="dateTrait.t:alignment" spec="beast.evolution.tree.TraitSet" traitname="date-backward">
               <taxa id="TaxonSet.alignment" spec="TaxonSet">
                     <alignment idref="alignment"/>
               </taxa>
@@ -163,30 +165,75 @@ class BEAST2XML(object):
     @param template: An C{str} filename or an open file pointer to read the
         XML template from. If C{None} a default strict clock constant
         population size template will be used.
+    @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
+        expression that will be used to capture sequence dates from their ids.
+        The regular expression must have a single (...) capture region.
+    @param sequenceIdDateRegexMayNotMatch: If C{True} it should not be
+        considered an error if a sequence id does not match the regular
+        expression given by C{sequenceIdDateRegex}.
     """
 
     TRACELOG_SUFFIX = '.log'
     TREELOG_SUFFIX = '.trees'
 
-    def __init__(self, template=None):
+    def __init__(self, template=None, sequenceIdDateRegex=None,
+                 sequenceIdDateRegexMayNotMatch=False):
         if template is not None:
             self._tree = ET.parse(template)
         else:
             self._tree = ET.ElementTree(ET.fromstring(DEFAULT_TEMPLATE))
+        if sequenceIdDateRegex is None:
+            self._sequenceIdDateRegex = None
+        else:
+            self._sequenceIdDateRegex = re.compile(sequenceIdDateRegex)
+
+        self._sequenceIdDateRegexMayNotMatch = sequenceIdDateRegexMayNotMatch
         self._sequences = Reads()
-        self._ages = {}
+        self._ageByFullId = {}
+        self._ageByShortId = {}
+
+    @staticmethod
+    def findElements(tree):
+        """
+        Check that an XML tree has the required structure and return the found
+        elements.
+
+        @param tree: An C{ET.ElementTree} instance.
+        @raise ValueError: If any required element cannot be found.
+        @return: A C{dict} keyed by C{str} element paths with C{ET.Element}
+            instances as values.
+        """
+        result = {}
+        root = tree.getroot()
+
+        for tag in ("data",
+                    "run",
+                    "./run/state/tree/trait",
+                    "./run/logger[@id='tracelog']",
+                    "./run/logger[@id='treelog.t:alignment']",
+                    "./run/logger[@id='screenlog']"):
+            element = root.find(tag)
+            if element is None:
+                raise ValueError('Could not find %r tag in XML template' % tag)
+            result[tag] = element
+
+        return result
 
     def addAge(self, sequenceId, age):
         """
-        Set the age of a sequence.
+        Specify the age of a sequence.
 
-        @param sequenceId: The C{str} name of a sequence id.
+        @param sequenceId: The C{str} name of a sequence id. An age will be
+            recorded for both the full id and for the part of it up to its
+            first space. This makes it convenient for giving sequence ids from
+            the command line (e.g., using ../bin/beast2-xml.py) without having
+            to specify the full id. On id lookup (when creating XML), full ids
+            always have precedence so there is no danger of short id
+            duplication error if full ids are always used.
         @param age: The C{float} age of the sequence.
-        @raise KeyError: If no sequence with id C{sequenceId} is known.
         """
-        # Note that The raising of a KeyError could be relaxed, but that
-        # could allow errors to creep in.
-        self._ages[sequenceId] = age
+        self._ageByShortId[sequenceId.split()[0]] = age
+        self._ageByFullId[sequenceId] = age
 
     def addSequence(self, sequence, age=None):
         """
@@ -198,6 +245,20 @@ class BEAST2XML(object):
         self._sequences.add(sequence)
         if age is not None:
             self.addAge(sequence.id, age)
+        elif self._sequenceIdDateRegex:
+            match = self._sequenceIdDateRegex.match(sequence.id)
+            if match:
+                try:
+                    age = match.group(1)
+                except IndexError:
+                    match = None
+                else:
+                    self.addAge(sequence.id, float(age))
+
+            if not self._sequenceIdDateRegexMayNotMatch and not match:
+                raise ValueError(
+                    'No sequence date could be found in %r '
+                    'using the sequence id date regex' % sequence.id)
 
     def addSequences(self, sequences):
         """
@@ -208,12 +269,20 @@ class BEAST2XML(object):
         for sequence in sequences:
             self._sequences.add(sequence)
 
-    def toStr(self, chainLength=None, logFileBasename=None,
-              traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-              transformFunc=None):
+    def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
+                 dateDirection='backward', logFileBasename=None,
+                 traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
+                 transformFunc=None, mimicBEAUTi=False):
         """
         @param chainLength: The C{int} length of the MCMC chain. If C{None},
             the value in the template will be retained.
+        @param defaultAge: The C{float} age to use for sequences that are not
+            explicitly given an age via C{addAge}.
+        @param dateUnit: A C{str}, either 'day', 'month', or 'year'
+            indicating the date time unit.
+        @param dateDirection: A C{str}, either 'backward' or 'forward'
+            indicating whether dates are back in time from the present or
+            forward in time from some point in the past.
         @param logFileBasename: The C{str} The base filename to write logs to.
             A .log or .trees suffix will be appended to this to make the
             actual log file names.  If C{None}, the log file names in the
@@ -230,87 +299,73 @@ class BEAST2XML(object):
         @param transformFunc: If not C{None} A callable that will be passed
             the C{ElementTree} instance and which must return an C{ElementTree}
             instance.
+        @param mimicBEAUTi: If C{True}, add attributes to the <beast> tag
+            in the way that BEAUTi does, to allow BEAUTi to load the XML we
+            produce.
+        @raise ValueError: If any required tree elements cannot be found
+            (raised by our call to self.findElements).
+        @return: C{str} XML.
         """
-        root = self._tree.getroot()
-        data = root.find('data')
+        if mimicBEAUTi:
+            root = self._tree.getroot()
+            root.set('beautitemplate', 'Standard')
+            root.set('beautistatus', '')
 
-        if data is None:
-            raise ValueError('Could not find <data> tag in XML template')
+        elements = self.findElements(self._tree)
 
         # Delete any existing children of the data node.
+        data = elements['data']
         for child in data:
             data.remove(child)
 
-        trait = root.find('./run/state/tree/trait')
-
-        if trait is None:
-            raise ValueError('Could not find <trait> tag in XML template')
-
         # Add in all sequences.
+        trait = elements['./run/state/tree/trait']
         traitText = []
         for sequence in self._sequences:
-            traitText.append('%s=%f' %
-                             (sequence.id, self._ages.get(sequence.id, 0.0)))
-            ET.SubElement(data, 'sequence', id='seq_' + sequence.id,
-                          taxon=sequence.id, totalcount='4',
-                          value=sequence.sequence)
+            id_ = sequence.id
+            shortId = id_.split()[0]
+            traitText.append(
+                '%s=%f' % (shortId, (self._ageByFullId.get(id_) or
+                                     self._ageByShortId.get(shortId) or
+                                     defaultAge)))
+            ET.SubElement(data, 'sequence', id='seq_' + shortId, taxon=shortId,
+                          totalcount='4', value=sequence.sequence)
 
         trait.text = ',\n'.join(traitText) + '\n'
 
+        # Set the date direction.
+        trait.set('traitname', 'date-' + dateDirection)
+
+        # Set the date unit (if not 'year').
+        if dateUnit != 'year':
+            trait.set('units', dateUnit)
+
         if chainLength is not None:
-            # This must succeed as the find on run/state/tree/trait succeeded.
-            run = root.find('run')
-            run.set('chainLength', str(chainLength))
+            elements['run'].set('chainLength', str(chainLength))
 
         if logFileBasename is not None:
             # Trace log.
-            logger = root.find("./run/logger[@id='tracelog']")
-
-            if logger is None:
-                raise ValueError('Could not find <logger id="tracelog"> tag '
-                                 'in XML template')
-
+            logger = elements["./run/logger[@id='tracelog']"]
             logger.set('fileName', logFileBasename + self.TRACELOG_SUFFIX)
-
             # Tree log.
-            logger = root.find("./run/logger[@id='treelog.t:alignment']")
-
-            if logger is None:
-                raise ValueError(
-                    'Could not find <logger id="treelog.t:alignment"> tag '
-                    'in XML template')
-
+            logger = elements["./run/logger[@id='treelog.t:alignment']"]
             logger.set('fileName', logFileBasename + self.TREELOG_SUFFIX)
 
         if traceLogEvery is not None:
-            logger = root.find("./run/logger[@id='tracelog']")
-
-            if logger is None:
-                raise ValueError('Could not find <logger id="tracelog"> tag '
-                                 'in XML template')
-
+            logger = elements["./run/logger[@id='tracelog']"]
             logger.set('logEvery', str(traceLogEvery))
 
         if treeLogEvery is not None:
-            logger = root.find("./run/logger[@id='treelog.t:alignment']")
-
-            if logger is None:
-                raise ValueError(
-                    'Could not find <logger id="treelog.t:alignment"> tag '
-                    'in XML template')
-
+            logger = elements["./run/logger[@id='treelog.t:alignment']"]
             logger.set('logEvery', str(treeLogEvery))
 
         if screenLogEvery is not None:
-            logger = root.find("./run/logger[@id='screenlog']")
-
-            if logger is None:
-                raise ValueError('Could not find <logger id="screenlog"> tag '
-                                 'in XML template')
-
+            logger = elements["./run/logger[@id='screenlog']"]
             logger.set('logEvery', str(screenLogEvery))
 
-        if transformFunc is not None:
-            tree = transformFunc(self._tree)
+        tree = (self._tree if transformFunc is None
+                else transformFunc(self._tree))
 
-        return ET.tostring(tree.getroot(), encoding='unicode')
+        stream = io.StringIO()
+        tree.write(stream, 'unicode', xml_declaration=True)
+        return stream.getvalue()
