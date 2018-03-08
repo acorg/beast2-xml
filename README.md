@@ -1,23 +1,26 @@
 ## BEAST2 XML
 
 This is a first, and *very* simplistic, cut at generating BEAST2 XML from
-Python.  BEAST2 is a complex program and so is its input XML.  People
-normally generate the input XML using a GUI tool, BEAUTi. BEAUTi is also a
-complex tool, and the XML it generates can vary widely. Because BEAUTi is a
-GUI tool it's not possible to use it to programmatically generate XML.
+Python (2.7, 3.5, 3.6 are all known to work).
+
+BEAST2 is a complex program and so is its input XML.  People normally
+generate the input XML using a GUI tool,
+[BEAUTi](https://www.beast2.org/beauti/). BEAUTi is also a complex tool,
+and the XML it generates can vary widely. Because BEAUTi is a GUI tool it's
+not possible to use it to programmatically generate XML.
 
 I wrote `beast2-xml` because I wanted a way to quickly and easily generate
 BEAST2 XML files, from the command line and also from my
 [Python](https://www.python.org/) code.
 
-There are a lot of things that could be added to this code! Contributions
+There are a *lot* of things that could be added to this code! Contributions
 welcome.
 
 ## This package provides
 
-* a command line script ([bin/beast2-xml.py](bin/beast2-xml.py)) to
+* A command-line script ([bin/beast2-xml.py](bin/beast2-xml.py)) to
   generate [BEAST2](http://beast2.org/) XML files.
-* a simplistic Python class (in [beast2xml/beast2.py](beast2xml/beast2.py))
+* A simplistic Python class (in [beast2xml/beast2.py](beast2xml/beast2.py))
   that may be helpful if you are writing Python that needs to generate
   BEAST2 XML files.  (This Python class is of course used by the command
   line script.)
@@ -32,12 +35,13 @@ Run `beast2-xml.py --help` to see currently supported options:
 
 ```sh
 $ beast2-xml.py --help
-usage: beast2-xml.py [-h] [--chainLength LENGTH] [--templateFile FILENAME]
-                     [--age ID=N [ID=N ...]] [--defaultAge N]
-                     [--dateUnit UNIT] [--dateDirection DIRECTION]
+usage: beast2-xml.py [-h] [--clockModel MODEL | --templateFile FILENAME]
+                     [--chainLength LENGTH] [--age ID=N [ID=N ...]]
+                     [--defaultAge N] [--dateUnit UNIT]
+                     [--dateDirection DIRECTION]
                      [--logFileBasename BASE-FILENAME] [--traceLogEvery N]
                      [--treeLogEvery N] [--screenLogEvery N] [--mimicBEAUTi]
-                     [--sequenceIdDateRegex SEQUENCEIDDATEREGEX]
+                     [--sequenceIdDateRegex REGEX]
                      [--sequenceIdDateRegexMayNotMatch] [--fastaFile FILENAME]
                      [--readClass CLASSNAME] [--fasta | --fastq | --fasta-ss]
 
@@ -46,9 +50,12 @@ BEAST2 input file on stdout.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --chainLength LENGTH  The MCMC chain length. (default: None)
+  --clockModel MODEL    Specify the clock model. Possible values are 'random-
+                        local', 'relaxed-exponential', 'relaxed-lognormal', or
+                        'strict' (default: strict)
   --templateFile FILENAME
                         The XML template file to use. (default: None)
+  --chainLength LENGTH  The MCMC chain length. (default: None)
   --age ID=N [ID=N ...]
                         The age of a sequence. The format is a sequence id, an
                         equals sign, then the age. For convenience, just the
@@ -89,14 +96,12 @@ optional arguments:
                         sequences will be assigned the default date unless one
                         is given via --age. (default: False)
   --fastaFile FILENAME  The name of the FASTA input file. Standard input will
-                        be read if no file name is given. (default:
-                        <_io.TextIOWrapper name='<stdin>' mode='r'
-                        encoding='UTF-8'>)
+                        be read if no file name is given.
   --readClass CLASSNAME
                         If specified, give the type of the reads in the input.
-                        Possible choices: TranslatedRead, Read, AAReadWithX,
-                        SSAARead, AAReadORF, RNARead, DNARead, AARead,
-                        SSAAReadWithX. (default: DNARead)
+                        Possible choices: SSAARead, DNARead, TranslatedRead,
+                        RNARead, SSAAReadWithX, AAReadORF, Read, AARead,
+                        AAReadWithX. (default: DNARead)
   --fasta               If specified, input will be treated as FASTA. This is
                         the default. (default: False)
   --fastq               If specified, input will be treated as FASTQ.
@@ -108,12 +113,16 @@ optional arguments:
 
 As mentioned, this is extremely simplistic. If you need to generate more
 complex XML, you can pass in a template file using `--templateFile`. Your
-template will need to have a high-level structure that's similar to the
-default one found at the start of [beast2-xml.py](bin/beast2-xml.py) or
-the various command-line options for manipulating the template wont find
-what they need (you'll see an error message in this case). The default
-template comes from BEAUTi, so if you generate one yourself using BEAUTi,
-you can almost certainly pass it to `beast2-xml.py` to use as a basis.
+template will need to have a high-level structure that's similar to those
+produced by BEAUTi, otherwise the various command-line options for
+manipulating the template wont find what they need (you'll see an error
+message in this case).
+
+If you don't pass a template file name, a default will be chosen based on
+the clock model (`strict` by default).  The [default templates](templates)
+all come from BEAUTi, so if you generate a template yourself using BEAUTi,
+you can almost certainly pass it to `beast2-xml.py` to use as a basis to
+create variants from.
 
 Note that the generated XML contains just the first part of sequence ids in
 the given FASTA input. I'm not sure if this is a requirement, but it's what
@@ -125,9 +134,9 @@ If you want to create BEAST2 XML from your own Python, you can use the
 `BEAST2XML` class defined in [beast2xml/beast2.py](beast2xml/beast2.py).
 
 One example of using this class can be found in the
-[beast2-xml.py](bin/beast2-xml.py) script.  Example showing all
+[beast2-xml.py](bin/beast2-xml.py) script.  Small examples showing all
 functionality can be found in the tests in
-[beast2xml/test/testBeast2.py](beast2xml/test/testBeast2.py).
+[test/testBeast2.py](test/testBeast2.py).
 
 ## Development
 
@@ -143,3 +152,11 @@ can use its `trial` test runner, via
 ```sh
 $ make tcheck
 ```
+
+You can also use
+
+```sh
+$ tox
+```
+
+to run tests for various versions of Python.

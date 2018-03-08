@@ -12,13 +12,24 @@ parser = argparse.ArgumentParser(
     description=('Given FASTA on stdin (or in a file via the --fastaFile '
                  'option), write an XML BEAST2 input file on stdout.'))
 
+# A mutually exclusive group for either --clockModel or --templateFile.
+group = parser.add_mutually_exclusive_group()
+
+group.add_argument(
+    '--clockModel', metavar='MODEL', default='strict',
+    choices=('random-local', 'relaxed-exponential', 'relaxed-lognormal',
+             'strict'),
+    help=('Specify the clock model. Possible values are '
+          "'random-local', 'relaxed-exponential', 'relaxed-lognormal', "
+          "or 'strict'"))
+
+group.add_argument(
+    '--templateFile', metavar='FILENAME',
+    help='The XML template file to use.')
+
 parser.add_argument(
     '--chainLength', type=int, metavar='LENGTH',
     help='The MCMC chain length.')
-
-parser.add_argument(
-    '--templateFile', metavar='FILENAME',
-    help='The XML template file to use.')
 
 parser.add_argument(
     '--age', metavar='ID=N', nargs='+', action='append',
@@ -85,7 +96,7 @@ args = parser.parse_args()
 reads = parseFASTACommandLineOptions(args)
 
 xml = BEAST2XML(
-    template=args.templateFile,
+    template=args.templateFile, clockModel=args.clockModel,
     sequenceIdDateRegex=args.sequenceIdDateRegex,
     sequenceIdDateRegexMayNotMatch=args.sequenceIdDateRegexMayNotMatch,
 )

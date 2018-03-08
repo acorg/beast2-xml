@@ -1,13 +1,13 @@
-.PHONY: check, pep8, pyflakes, lint
+.PHONY: check, tcheck, pep8, pyflakes, lint, wc, clean, clobber, upload
 
 check:
 	python -m discover -v
 
 tcheck:
-	trial --rterrors beast2xml/test/test*py
+	trial --rterrors test/test*py
 
 pep8:
-	find . -path './.tox' -prune -o -path './build' -prune -o -path './dist' -prune -o -name '*.py' -print0 | xargs -0 pep8 --ignore=E501
+	find . -path './.tox' -prune -o -path './build' -prune -o -path './dist' -prune -o -name '*.py' -print0 | xargs -0 pep8
 
 pyflakes:
 	find .  -path './.tox' -prune -path './build' -prune -o -path './dist' -prune -o -name '*.py' -print0 | xargs -0 pyflakes
@@ -24,10 +24,10 @@ clean:
 	python setup.py clean
 
 clobber: clean
-	rm -fr .tox beast2_xml.egg-info
+	rm -fr .tox beast2_xml.egg-info dist
 
-# The upload target requires that you have access rights to PYPI. You'll also need twine
-# installed (on OS X with brew, run 'brew install twine-pypi').
+# The upload target requires that you have access rights to PYPI. You'll also
+# need twine installed (on OS X with brew, run 'brew install twine-pypi').
 upload:
 	python setup.py sdist
 	twine upload dist/beast2-xml-$$(env PYTHONPATH=. bin/beast2-xml-version.py).tar.gz

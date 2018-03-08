@@ -2,175 +2,21 @@ from __future__ import print_function, division
 
 import re
 import six
+import pkg_resources
 import xml.etree.ElementTree as ET
 from dark.reads import Reads
-
-if six.PY3:
-    from io import StringIO
-else:
-    from cStringIO import StringIO
-
-
-DEFAULT_TEMPLATE = """<?xml version='1.0' encoding='UTF-8'?>
-<beast namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood" required="" version="2.4">
-
-<data id="alignment" name="alignment">
-</data>
-
-<map name="Uniform">beast.math.distributions.Uniform</map>
-<map name="Exponential">beast.math.distributions.Exponential</map>
-<map name="LogNormal">beast.math.distributions.LogNormalDistributionModel</map>
-<map name="Normal">beast.math.distributions.Normal</map>
-<map name="Beta">beast.math.distributions.Beta</map>
-<map name="Gamma">beast.math.distributions.Gamma</map>
-<map name="LaplaceDistribution">beast.math.distributions.LaplaceDistribution</map>
-<map name="prior">beast.math.distributions.Prior</map>
-<map name="InverseGamma">beast.math.distributions.InverseGamma</map>
-<map name="OneOnX">beast.math.distributions.OneOnX</map>
-
-<run id="mcmc" spec="MCMC" chainLength="20000000">
-    <state id="state" storeEvery="5000">
-        <tree id="Tree.t:alignment" name="stateNode">
-            <trait id="dateTrait.t:alignment" spec="beast.evolution.tree.TraitSet" traitname="date-backward">
-              <taxa id="TaxonSet.alignment" spec="TaxonSet">
-                    <alignment idref="alignment"/>
-              </taxa>
-            </trait>
-            <taxonset idref="TaxonSet.alignment"/>
-        </tree>
-        <parameter id="clockRate.c:alignment" lower="1.0E-9" name="stateNode" upper="0.001">1.0E-4</parameter>
-        <parameter id="rateAG.s:alignment" lower="0.0" name="stateNode">1.0</parameter>
-        <parameter id="rateCG.s:alignment" lower="0.0" name="stateNode">1.0</parameter>
-        <parameter id="rateGT.s:alignment" lower="0.0" name="stateNode">1.0</parameter>
-        <parameter id="popSize.t:alignment" lower="-1.0E100" name="stateNode" upper="1.0E100">0.3</parameter>
-        <parameter id="proportionInvariant.s:alignment" lower="0.0" name="stateNode" upper="1.0">0.3</parameter>
-        <parameter id="gammaShape.s:alignment" name="stateNode">1.0</parameter>
-        <parameter id="freqParameter.s:alignment" dimension="4" lower="0.0" name="stateNode" upper="1.0">0.25</parameter>
-    </state>
-
-    <init id="RandomTree.t:alignment" spec="beast.evolution.tree.RandomTree" estimate="false" initial="@Tree.t:alignment" taxa="@alignment">
-        <populationModel id="ConstantPopulation0.t:alignment" spec="ConstantPopulation">
-            <parameter id="randomPopSize.t:alignment" name="popSize">1.0</parameter>
-        </populationModel>
-    </init>
-
-    <distribution id="posterior" spec="util.CompoundDistribution">
-        <distribution id="prior" spec="util.CompoundDistribution">
-            <distribution id="CoalescentConstant.t:alignment" spec="Coalescent">
-                <populationModel id="ConstantPopulation.t:alignment" spec="ConstantPopulation" popSize="@popSize.t:alignment"/>
-                <treeIntervals id="TreeIntervals.t:alignment" spec="TreeIntervals" tree="@Tree.t:alignment"/>
-            </distribution>
-            <prior id="ClockPrior.c:alignment" name="distribution" x="@clockRate.c:alignment">
-                <Uniform id="Uniform.0" lower="1.0E-9" name="distr" upper="0.001"/>
-            </prior>
-            <prior id="GammaShapePrior.s:alignment" name="distribution" x="@gammaShape.s:alignment">
-                <Exponential id="Exponential.0" name="distr">
-                    <parameter id="RealParameter.0" lower="0.0" name="mean" upper="0.0">1.0</parameter>
-                </Exponential>
-            </prior>
-            <prior id="PopSizePrior.t:alignment" name="distribution" x="@popSize.t:alignment">
-                <OneOnX id="OneOnX.1" name="distr"/>
-            </prior>
-            <prior id="PropInvariantPrior.s:alignment" name="distribution" x="@proportionInvariant.s:alignment">
-                <Uniform id="Uniform.2" name="distr"/>
-            </prior>
-            <prior id="RateAGPrior.s:alignment" name="distribution" x="@rateAG.s:alignment">
-                <Gamma id="Gamma.1" name="distr">
-                    <parameter id="RealParameter.3" estimate="false" name="alpha">0.05</parameter>
-                    <parameter id="RealParameter.4" estimate="false" name="beta">20.0</parameter>
-                </Gamma>
-            </prior>
-            <prior id="RateCGPrior.s:alignment" name="distribution" x="@rateCG.s:alignment">
-                <Gamma id="Gamma.3" name="distr">
-                    <parameter id="RealParameter.7" estimate="false" name="alpha">0.05</parameter>
-                    <parameter id="RealParameter.8" estimate="false" name="beta">10.0</parameter>
-                </Gamma>
-            </prior>
-            <prior id="RateGTPrior.s:alignment" name="distribution" x="@rateGT.s:alignment">
-                <Gamma id="Gamma.5" name="distr">
-                    <parameter id="RealParameter.11" estimate="false" name="alpha">0.05</parameter>
-                    <parameter id="RealParameter.12" estimate="false" name="beta">10.0</parameter>
-                </Gamma>
-            </prior>
-        </distribution>
-        <distribution id="likelihood" spec="util.CompoundDistribution" useThreads="true">
-            <distribution id="treeLikelihood.alignment" spec="ThreadedTreeLikelihood" data="@alignment" tree="@Tree.t:alignment">
-                <siteModel id="SiteModel.s:alignment" spec="SiteModel" gammaCategoryCount="4" proportionInvariant="@proportionInvariant.s:alignment" shape="@gammaShape.s:alignment">
-                    <parameter id="mutationRate.s:alignment" estimate="false" name="mutationRate">1.0</parameter>
-                    <substModel id="gtr.s:alignment" spec="GTR" rateAC="@rateCG.s:alignment" rateAG="@rateAG.s:alignment" rateAT="@rateGT.s:alignment" rateCG="@rateCG.s:alignment" rateGT="@rateGT.s:alignment">
-                        <parameter id="rateCT.s:alignment" estimate="false" lower="0.0" name="rateCT">1.0</parameter>
-                        <frequencies id="estimatedFreqs.s:alignment" spec="Frequencies" frequencies="@freqParameter.s:alignment"/>
-                    </substModel>
-                </siteModel>
-                <branchRateModel id="StrictClock.c:alignment" spec="beast.evolution.branchratemodel.StrictClockModel" clock.rate="@clockRate.c:alignment"/>
-            </distribution>
-        </distribution>
-    </distribution>
-
-    <operator id="StrictClockRateScaler.c:alignment" spec="ScaleOperator" parameter="@clockRate.c:alignment" scaleFactor="0.75" weight="3.0"/>
-
-    <operator id="strictClockUpDownOperator.c:alignment" spec="UpDownOperator" scaleFactor="0.75" weight="3.0">
-        <up idref="clockRate.c:alignment"/>
-        <down idref="Tree.t:alignment"/>
-    </operator>
-
-    <operator id="RateAGScaler.s:alignment" spec="ScaleOperator" parameter="@rateAG.s:alignment" scaleFactor="0.5" weight="0.1"/>
-    <operator id="RateCGScaler.s:alignment" spec="ScaleOperator" parameter="@rateCG.s:alignment" scaleFactor="0.5" weight="0.1"/>
-    <operator id="RateGTScaler.s:alignment" spec="ScaleOperator" parameter="@rateGT.s:alignment" scaleFactor="0.5" weight="0.1"/>
-    <operator id="CoalescentConstantTreeScaler.t:alignment" spec="ScaleOperator" scaleFactor="0.5" tree="@Tree.t:alignment" weight="3.0"/>
-    <operator id="CoalescentConstantTreeRootScaler.t:alignment" spec="ScaleOperator" rootOnly="true" scaleFactor="0.5" tree="@Tree.t:alignment" weight="3.0"/>
-    <operator id="CoalescentConstantUniformOperator.t:alignment" spec="Uniform" tree="@Tree.t:alignment" weight="30.0"/>
-    <operator id="CoalescentConstantSubtreeSlide.t:alignment" spec="SubtreeSlide" tree="@Tree.t:alignment" weight="15.0"/>
-    <operator id="CoalescentConstantNarrow.t:alignment" spec="Exchange" tree="@Tree.t:alignment" weight="15.0"/>
-    <operator id="CoalescentConstantWide.t:alignment" spec="Exchange" isNarrow="false" tree="@Tree.t:alignment" weight="3.0"/>
-    <operator id="CoalescentConstantWilsonBalding.t:alignment" spec="WilsonBalding" tree="@Tree.t:alignment" weight="3.0"/>
-    <operator id="PopSizeScaler.t:alignment" spec="ScaleOperator" parameter="@popSize.t:alignment" scaleFactor="0.75" weight="3.0"/>
-    <operator id="proportionInvariantScaler.s:alignment" spec="ScaleOperator" parameter="@proportionInvariant.s:alignment" scaleFactor="0.5" weight="0.1"/>
-    <operator id="gammaShapeScaler.s:alignment" spec="ScaleOperator" parameter="@gammaShape.s:alignment" scaleFactor="0.5" weight="0.1"/>
-    <operator id="FrequenciesExchanger.s:alignment" spec="DeltaExchangeOperator" delta="0.01" weight="0.1">
-        <parameter idref="freqParameter.s:alignment"/>
-    </operator>
-
-    <logger id="tracelog" fileName="strict-const.log" logEvery="2000" model="@posterior" sanitiseHeaders="true" sort="smart">
-        <log idref="posterior"/>
-        <log idref="likelihood"/>
-        <log idref="prior"/>
-        <log idref="treeLikelihood.alignment"/>
-        <log id="TreeHeight.t:alignment" spec="beast.evolution.tree.TreeHeightLogger" tree="@Tree.t:alignment"/>
-        <log idref="clockRate.c:alignment"/>
-        <log idref="rateAG.s:alignment"/>
-        <log idref="rateCG.s:alignment"/>
-        <log idref="rateGT.s:alignment"/>
-        <log idref="popSize.t:alignment"/>
-        <log idref="CoalescentConstant.t:alignment"/>
-        <log idref="proportionInvariant.s:alignment"/>
-        <log idref="gammaShape.s:alignment"/>
-        <log idref="freqParameter.s:alignment"/>
-    </logger>
-
-    <logger id="screenlog" logEvery="5000">
-        <log idref="posterior"/>
-        <log id="ESS.0" spec="util.ESS" arg="@posterior"/>
-        <log idref="likelihood"/>
-        <log idref="prior"/>
-    </logger>
-
-    <logger id="treelog.t:alignment" fileName="strict-const.trees" logEvery="2000" mode="tree">
-        <log id="TreeWithMetaDataLogger.t:alignment" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:alignment"/>
-    </logger>
-
-</run>
-</beast>
-"""
 
 
 class BEAST2XML(object):
     """
     Create BEAST2 XML.
 
-    @param template: An C{str} filename or an open file pointer to read the
-        XML template from. If C{None} a default strict clock constant
-        population size template will be used.
+    @param template: A C{str} filename or an open file pointer to read the
+        XML template from. If C{None}, a template based on C{clockModel}
+        will be used.
+    @param clockModel: A C{str} specifying the clock model. Possible values
+        are 'random-local', 'relaxed-exponential', 'relaxed-lognormal',
+        and 'strict.
     @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence dates from their ids.
         The regular expression must have a single (...) capture region.
@@ -182,12 +28,15 @@ class BEAST2XML(object):
     TRACELOG_SUFFIX = '.log'
     TREELOG_SUFFIX = '.trees'
 
-    def __init__(self, template=None, sequenceIdDateRegex=None,
+    def __init__(self, template=None, clockModel='strict',
+                 sequenceIdDateRegex=None,
                  sequenceIdDateRegexMayNotMatch=False):
-        if template is not None:
-            self._tree = ET.parse(template)
+        if template is None:
+            self._tree = ET.parse(
+                pkg_resources.resource_filename(
+                    'beast2xml', 'templates/%s.xml' % clockModel))
         else:
-            self._tree = ET.ElementTree(ET.fromstring(DEFAULT_TEMPLATE))
+            self._tree = ET.parse(template)
         if sequenceIdDateRegex is None:
             self._sequenceIdDateRegex = None
         else:
@@ -372,7 +221,7 @@ class BEAST2XML(object):
         tree = (self._tree if transformFunc is None
                 else transformFunc(self._tree))
 
-        stream = StringIO()
+        stream = six.StringIO()
         tree.write(stream, 'unicode' if six.PY3 else 'utf-8',
                    xml_declaration=True)
         return stream.getvalue()
