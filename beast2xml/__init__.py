@@ -4,4 +4,4 @@ from beast2xml.beast2 import BEAST2XML
 # will not be found by the version() function in ../setup.py
 __version__ = '1.0.6'
 
-__all__ = ['BEAST2XML', '__version__']
+__all__ = ['BEAST2XML']
