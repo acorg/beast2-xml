@@ -16,7 +16,7 @@ BEAST2 XML files, from the command line and also from my
 There are a *lot* of things that could be added to this code! Contributions
 welcome.
 
-## This package provides
+## The package provides
 
 * A command-line script ([bin/beast2-xml.py](bin/beast2-xml.py)) to
   generate [BEAST2](http://beast2.org/) XML files.
@@ -24,6 +24,16 @@ welcome.
   that may be helpful if you are writing Python that needs to generate
   BEAST2 XML files.  (This Python class is of course used by the command
   line script.)
+
+## Installation
+
+```sh
+$ pip install beast2-xml
+```
+
+You can also get the source
+[from PyPI](https://pypi.org/project/beast2-xml/) or
+[on Github](https://github.com/acorg/beast2-xml).
 
 ## Generate XML from the command line
 
