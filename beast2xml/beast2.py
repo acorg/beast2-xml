@@ -127,7 +127,7 @@ class BEAST2XML(object):
     def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
                  dateDirection='backward', logFileBasename=None,
                  traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-                 transformFunc=None, mimicBEAUTi=False):
+                 transformFunc=None, mimicBEAUti=False):
         """
         @param chainLength: The C{int} length of the MCMC chain. If C{None},
             the value in the template will be retained.
@@ -154,14 +154,14 @@ class BEAST2XML(object):
         @param transformFunc: If not C{None} A callable that will be passed
             the C{ElementTree} instance and which must return an C{ElementTree}
             instance.
-        @param mimicBEAUTi: If C{True}, add attributes to the <beast> tag
-            in the way that BEAUTi does, to allow BEAUTi to load the XML we
+        @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
+            in the way that BEAUti does, to allow BEAUti to load the XML we
             produce.
         @raise ValueError: If any required tree elements cannot be found
             (raised by our call to self.findElements).
         @return: C{str} XML.
         """
-        if mimicBEAUTi:
+        if mimicBEAUti:
             root = self._tree.getroot()
             root.set('beautitemplate', 'Standard')
             root.set('beautistatus', '')

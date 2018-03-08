@@ -74,9 +74,9 @@ parser.add_argument(
     help='How often to write logging to the screen (i.e., terminal).')
 
 parser.add_argument(
-    '--mimicBEAUTi', action='store_true', default=False,
+    '--mimicBEAUti', action='store_true', default=False,
     help=('If specified, add attributes to the <beast> tag that mimic what '
-          'BEAUTi uses so that BEAUTi will be able to load the XML.'))
+          'BEAUti uses so that BEAUti will be able to load the XML.'))
 
 parser.add_argument(
     '--sequenceIdDateRegex', metavar='REGEX',
@@ -122,5 +122,5 @@ print(xml.toString(
     traceLogEvery=args.traceLogEvery,
     treeLogEvery=args.treeLogEvery,
     screenLogEvery=args.screenLogEvery,
-    mimicBEAUTi=args.mimicBEAUTi).replace(
+    mimicBEAUti=args.mimicBEAUti).replace(
         '" /><sequence', '" />\n    <sequence'))

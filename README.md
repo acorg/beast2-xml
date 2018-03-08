@@ -5,8 +5,8 @@ Python (2.7, 3.5, 3.6 are all known to work).
 
 BEAST2 is a complex program and so is its input XML.  People normally
 generate the input XML using a GUI tool,
-[BEAUTi](https://www.beast2.org/beauti/). BEAUTi is also a complex tool,
-and the XML it generates can vary widely. Because BEAUTi is a GUI tool it's
+[BEAUti](https://www.beast2.org/beauti/). BEAUti is also a complex tool,
+and the XML it generates can vary widely. Because BEAUti is a GUI tool it's
 not possible to use it to programmatically generate XML.
 
 I wrote `beast2-xml` because I wanted a way to quickly and easily generate
@@ -50,7 +50,7 @@ usage: beast2-xml.py [-h] [--clockModel MODEL | --templateFile FILENAME]
                      [--defaultAge N] [--dateUnit UNIT]
                      [--dateDirection DIRECTION]
                      [--logFileBasename BASE-FILENAME] [--traceLogEvery N]
-                     [--treeLogEvery N] [--screenLogEvery N] [--mimicBEAUTi]
+                     [--treeLogEvery N] [--screenLogEvery N] [--mimicBEAUti]
                      [--sequenceIdDateRegex REGEX]
                      [--sequenceIdDateRegexMayNotMatch] [--fastaFile FILENAME]
                      [--readClass CLASSNAME] [--fasta | --fastq | --fasta-ss]
@@ -91,8 +91,8 @@ optional arguments:
                         2000)
   --screenLogEvery N    How often to write logging to the screen (i.e.,
                         terminal). (default: 2000)
-  --mimicBEAUTi         If specified, add attributes to the <beast> tag that
-                        mimic what BEAUTi uses so that BEAUTi will be able to
+  --mimicBEAUti         If specified, add attributes to the <beast> tag that
+                        mimic what BEAUti uses so that BEAUti will be able to
                         load the XML. (default: False)
   --sequenceIdDateRegex REGEX
                         A regular expression that will be used to capture
@@ -124,19 +124,19 @@ optional arguments:
 As mentioned, this is extremely simplistic. If you need to generate more
 complex XML, you can pass in a template file using `--templateFile`. Your
 template will need to have a high-level structure that's similar to those
-produced by BEAUTi, otherwise the various command-line options for
+produced by BEAUti, otherwise the various command-line options for
 manipulating the template wont find what they need (you'll see an error
 message in this case).
 
 If you don't pass a template file name, a default will be chosen based on
 the clock model (`strict` by default).  The [default templates](templates)
-all come from BEAUTi, so if you generate a template yourself using BEAUTi,
+all come from BEAUti, so if you generate a template yourself using BEAUti,
 you can almost certainly pass it to `beast2-xml.py` to use as a basis to
 create variants from.
 
 Note that the generated XML contains just the first part of sequence ids in
 the given FASTA input. I'm not sure if this is a requirement, but it's what
-BEAUTi does and so I have done the same.
+BEAUti does and so I have done the same.
 
 ## Generate BEAST2 XML in Python
 
@@ -179,7 +179,7 @@ and options you can pass to its `toString` method:
 def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
              dateDirection='backward', logFileBasename=None,
              traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-             transformFunc=None, mimicBEAUTi=False):
+             transformFunc=None, mimicBEAUti=False):
     """
     @param chainLength: The C{int} length of the MCMC chain. If C{None},
         the value in the template will be retained.
@@ -206,8 +206,8 @@ def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
     @param transformFunc: If not C{None} A callable that will be passed
         the C{ElementTree} instance and which must return an C{ElementTree}
         instance.
-    @param mimicBEAUTi: If C{True}, add attributes to the <beast> tag
-        in the way that BEAUTi does, to allow BEAUTi to load the XML we
+    @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
+        in the way that BEAUti does, to allow BEAUti to load the XML we
         produce.
     @raise ValueError: If any required tree elements cannot be found
         (raised by our call to self.findElements).

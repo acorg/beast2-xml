@@ -464,9 +464,9 @@ class ClockModelMixin(object):
         trait = elements['./run/state/tree/trait']
         self.assertEqual('day', trait.get('units'))
 
-    def testDontMimicBEAUTi(self):
+    def testDontMimicBEAUti(self):
         """
-        If mimicBEAUTi is not passed to toString the BEAUTi attributes must
+        If mimicBEAUti is not passed to toString the BEAUti attributes must
         not appear in the <beast> tag in the XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
@@ -475,13 +475,13 @@ class ClockModelMixin(object):
         self.assertEqual(None, root.get('beautitemplate'))
         self.assertEqual(None, root.get('beautistatus'))
 
-    def testMimicBEAUTi(self):
+    def testMimicBEAUti(self):
         """
-        Passing mimicBEAUTi=True to toString must result in the expected
-        BEAUTi attributes in the <beast> tag in the XML.
+        Passing mimicBEAUti=True to toString must result in the expected
+        BEAUti attributes in the <beast> tag in the XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.toString(mimicBEAUTi=True)))
+        tree = ET.ElementTree(ET.fromstring(xml.toString(mimicBEAUti=True)))
         root = tree.getroot()
         self.assertEqual('Standard', root.get('beautitemplate'))
         self.assertEqual('', root.get('beautistatus'))
