@@ -3,7 +3,7 @@ from six.moves import builtins
 from six import assertRaisesRegex, PY3, StringIO
 import xml.etree.ElementTree as ET
 from dark.reads import Read
-from beast2xml.beast2 import BEAST2XML
+from beast2xml import BEAST2XML
 
 try:
     from unittest.mock import mock_open, patch

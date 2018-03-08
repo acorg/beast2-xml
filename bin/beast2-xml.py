@@ -3,9 +3,9 @@
 from __future__ import print_function, division
 
 import argparse
-from beast2xml.beast2 import BEAST2XML
 from itertools import chain
 from dark.reads import addFASTACommandLineOptions, parseFASTACommandLineOptions
+from beast2xml import BEAST2XML
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,

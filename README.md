@@ -143,7 +143,79 @@ BEAUTi does and so I have done the same.
 If you want to create BEAST2 XML from your own Python, you can use the
 `BEAST2XML` class defined in [beast2xml/beast2.py](beast2xml/beast2.py).
 
-One example of using this class can be found in the
+The simplest possible usage is
+
+```python
+from beast2xml import BEAST2XML
+
+print(BEAST2XML().toString())
+```
+
+There are several options you can pass to the `BEAST2XML` constructor:
+
+```python
+class BEAST2XML(object):
+    """
+    Create BEAST2 XML.
+
+    @param template: A C{str} filename or an open file pointer to read the
+        XML template from. If C{None}, a template based on C{clockModel}
+        will be used.
+    @param clockModel: A C{str} specifying the clock model. Possible values
+        are 'random-local', 'relaxed-exponential', 'relaxed-lognormal',
+        and 'strict.
+    @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
+        expression that will be used to capture sequence dates from their ids.
+        The regular expression must have a single (...) capture region.
+    @param sequenceIdDateRegexMayNotMatch: If C{True} it should not be
+        considered an error if a sequence id does not match the regular
+        expression given by C{sequenceIdDateRegex}.
+    """
+```
+
+and options you can pass to its `toString` method:
+
+```python
+def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
+             dateDirection='backward', logFileBasename=None,
+             traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
+             transformFunc=None, mimicBEAUTi=False):
+    """
+    @param chainLength: The C{int} length of the MCMC chain. If C{None},
+        the value in the template will be retained.
+    @param defaultAge: The C{float} age to use for sequences that are not
+        explicitly given an age via C{addAge}.
+    @param dateUnit: A C{str}, either 'day', 'month', or 'year'
+        indicating the date time unit.
+    @param dateDirection: A C{str}, either 'backward' or 'forward'
+        indicating whether dates are back in time from the present or
+        forward in time from some point in the past.
+    @param logFileBasename: The C{str} The base filename to write logs to.
+        A .log or .trees suffix will be appended to this to make the
+        actual log file names.  If C{None}, the log file names in the
+        template will be retained.
+    @param traceLogEvery: An C{int} specifying how often to write to the
+        trace log file. If C{None}, the value in the template will be
+        retained.
+    @param treeLogEvery: An C{int} specifying how often to write to the
+        tree log file. If C{None}, the value in the template will be
+        retained.
+    @param screenLogEvery: An C{int} specifying how often to write to the
+        terminal (screen) log. If C{None}, the value in the template will
+        be retained.
+    @param transformFunc: If not C{None} A callable that will be passed
+        the C{ElementTree} instance and which must return an C{ElementTree}
+        instance.
+    @param mimicBEAUTi: If C{True}, add attributes to the <beast> tag
+        in the way that BEAUTi does, to allow BEAUTi to load the XML we
+        produce.
+    @raise ValueError: If any required tree elements cannot be found
+        (raised by our call to self.findElements).
+    @return: C{str} XML.
+    """
+```
+
+An example of using the Python class can be found in the
 [beast2-xml.py](bin/beast2-xml.py) script.  Small examples showing all
 functionality can be found in the tests in
 [test/testBeast2.py](test/testBeast2.py).
