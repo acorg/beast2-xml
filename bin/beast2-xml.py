@@ -102,18 +102,19 @@ xml = BEAST2XML(
 )
 xml.addSequences(reads)
 
-# Flatten lists of lists that we get from using both nargs='+' and
-# action='append'. We use both because it allows people to use --age on the
-# command line either via "--age id1=33 --age id2=21" or "--age id1=33
-# id2=21", or a combination of these. That way it's not necessary to
-# remember which way you're supposed to use it and you also can't be hit by
-# the subtle problem encountered in
-# https://github.com/acorg/dark-matter/issues/453
-ages = list(chain.from_iterable(args.age))
+if args.age:
+    # Flatten lists of lists that we get from using both nargs='+' and
+    # action='append'. We use both because it allows people to use --age on the
+    # command line either via "--age id1=33 --age id2=21" or "--age id1=33
+    # id2=21", or a combination of these. That way it's not necessary to
+    # remember which way you're supposed to use it and you also can't be hit by
+    # the subtle problem encountered in
+    # https://github.com/acorg/dark-matter/issues/453
+    ages = list(chain.from_iterable(args.age))
 
-for ageInfo in ages:
-    id_, age = ageInfo.rsplit(sep='=', maxsplit=1)
-    xml.addAge(id_.strip(), float(age.strip()))
+    for ageInfo in ages:
+        id_, age = ageInfo.rsplit(sep='=', maxsplit=1)
+        xml.addAge(id_.strip(), float(age.strip()))
 
 print(xml.toString(
     chainLength=args.chainLength, defaultAge=args.defaultAge,
@@ -122,5 +123,5 @@ print(xml.toString(
     traceLogEvery=args.traceLogEvery,
     treeLogEvery=args.treeLogEvery,
     screenLogEvery=args.screenLogEvery,
-    mimicBEAUti=args.mimicBEAUti).replace(
-        '" /><sequence', '" />\n    <sequence'))
+    mimicBEAUti=args.mimicBEAUti).replace('" /><sequence',
+                                          '" />\n    <sequence'))
