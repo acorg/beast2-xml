@@ -82,7 +82,10 @@ parser.add_argument(
     '--sequenceIdDateRegex', metavar='REGEX',
     help=('A regular expression that will be used to capture sequence dates '
           'from their ids. The regular expression must have a single (...) '
-          'capture region.'))
+          'capture region. Regular expression matching is anchored to '
+          "the start of the id string (i.e., Python's re.match function "
+          'is used, not the re.search function), so you must explicitly '
+          'match the id from its beginning.'))
 
 parser.add_argument(
     '--sequenceIdDateRegexMayNotMatch', action='store_true', default=False,
