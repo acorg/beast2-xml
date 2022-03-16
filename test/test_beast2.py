@@ -205,9 +205,9 @@ class ClockModelMixin(object):
         trait = elements['./run/state/tree/trait']
         self.assertTrue(trait.text.find('id1=0.0') > -1)
 
-    def testSequenceIdDateRegex(self):
+    def testSequenceIdAgeRegex(self):
         """
-        Using a sequence id date regex must result in the expected XML.
+        Using a sequence id age regex must result in the expected XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL,
                         sequenceIdAgeRegex='^.*_([0-9]+)')
@@ -219,9 +219,9 @@ class ClockModelMixin(object):
         trait = elements['./run/state/tree/trait']
         self.assertTrue(trait.text.find('id1_80_xxx=80.0') > -1)
 
-    def testSequenceIdDateRegexNonMatching(self):
+    def testSequenceIdAgeRegexNonMatching(self):
         """
-        Using a sequence id date regex with a sequence id that does not match
+        Using a sequence id age regex with a sequence id that does not match
         must result in a ValueError.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL,
@@ -231,9 +231,9 @@ class ClockModelMixin(object):
         assertRaisesRegex(self, ValueError, error, xml.addSequence,
                           Read('id1', 'ACTG'))
 
-    def testSequenceIdDateRegexNonMatchingNotAnError(self):
+    def testSequenceIdRegexNonMatchingNotAnError(self):
         """
-        Using a sequence id date regex that doesn't match is not an error if
+        Using a sequence id age regex that doesn't match is not an error if
         we pass sequenceIdRegexMustMatch=False, in which case the default
         age should be assigned.
         """
