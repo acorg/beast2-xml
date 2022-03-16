@@ -1,7 +1,7 @@
 ## BEAST2 XML
 
 This is a first, and *very* simplistic, cut at generating BEAST2 XML from
-Python (2.7, 3.5, 3.6 are all known to work).
+Python (2.7, and 3.5 to 3.10 are all known to work).
 
 BEAST2 is a complex program and so is its input XML.  People normally
 generate the input XML using a GUI tool,
@@ -52,7 +52,8 @@ usage: beast2-xml.py [-h] [--clockModel MODEL | --templateFile FILENAME]
                      [--logFileBasename BASE-FILENAME] [--traceLogEvery N]
                      [--treeLogEvery N] [--screenLogEvery N] [--mimicBEAUti]
                      [--sequenceIdDateRegex REGEX]
-                     [--sequenceIdDateRegexMayNotMatch] [--fastaFile FILENAME]
+                     [--sequenceIdAgeRegex REGEX]
+                     [--sequenceIdRegexMayNotMatch] [--fastaFile FILENAME]
                      [--readClass CLASSNAME] [--fasta | --fastq | --fasta-ss]
 
 Given FASTA on stdin (or in a file via the --fastaFile option), write an XML
@@ -94,17 +95,33 @@ optional arguments:
   --mimicBEAUti         If specified, add attributes to the <beast> tag that
                         mimic what BEAUti uses so that BEAUti will be able to
                         load the XML. (default: False)
+
+
   --sequenceIdDateRegex REGEX
-                        A regular expression that will be used to capture
-                        sequence dates from their ids. The regular expression
-                        must have a single (...) capture region. (default:
-                        None)
-  --sequenceIdDateRegexMayNotMatch
-                        If specified (and --sequenceIdDateRegex is given) it
-                        will not be considered an error if a sequence id does
-                        not match the given regular expression. In that case,
-                        sequences will be assigned the default date unless one
-                        is given via --age. (default: False)
+                        A regular expression that will be used to capture sequence
+                        dates from their ids. The regular expression must have three
+                        named capture regions ("year", "month", and "day"). Regular
+                        expression matching is anchored to the start of the id string
+                        (i.e., Python's re.match function is used, not the re.search
+                        function), so you must explicitly match the id from its beginning.
+                        For example, you might use
+                        --sequenceIdDateRegex '^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'.
+                        (default: None)
+  --sequenceIdAgeRegex REGEX
+                        A regular expression that will be used to capture sequence ages
+                        from their ids. The regular expression must have a single capture
+                        region. Regular expression matching is anchored to the start of
+                        the id string (i.e., Python's re.match function is used, not the
+                        re.search function), so you must explicitly match the id from its
+                        beginning. For example, you might use --sequenceIdAgeRegex '^.*_(\d+)$'
+                        to capture an age preceded by an underscore at the very end of the
+                        sequence id. If --sequenceIdDateRegex is also given, it
+                        takes precedence when matching sequence ids. (default: None)
+  --sequenceIdRegexMayNotMatch
+                        If specified (and --sequenceIdDateRegex or --sequenceIdAgeRegex is given)
+                        it will not be considered an error if a sequence id does not
+                        match the given regular expression. In that case, sequences will be assigned
+                        an age of zero unless one is given via --age. (default: False)
   --fastaFile FILENAME  The name of the FASTA input file. Standard input will
                         be read if no file name is given.
   --readClass CLASSNAME
@@ -166,10 +183,13 @@ class BEAST2XML(object):
         and 'strict.
     @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence dates from their ids.
-        The regular expression must have a single (...) capture region.
-    @param sequenceIdDateRegexMayNotMatch: If C{True} it should not be
-        considered an error if a sequence id does not match the regular
-        expression given by C{sequenceIdDateRegex}.
+        See the explanation in ../bin/beast2-xml.py
+    @param sequenceIdAgeRegex: If not C{None}, gives a C{str} regular
+        expression that will be used to capture sequence ages from their ids.
+        See the explanation in ../bin/beast2-xml.py
+    @param sequenceIdRegexMustMatch: If C{True} it will be considered an error
+        if a sequence id does not match the regular expression given by
+        C{sequenceIdDateRegex} or C{sequenceIdAgeRegex}.
     """
 ```
 
@@ -185,8 +205,6 @@ def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
         the value in the template will be retained.
     @param defaultAge: The C{float} age to use for sequences that are not
         explicitly given an age via C{addAge}.
-    @param dateUnit: A C{str}, either 'day', 'month', or 'year'
-        indicating the date time unit.
     @param dateDirection: A C{str}, either 'backward' or 'forward'
         indicating whether dates are back in time from the present or
         forward in time from some point in the past.

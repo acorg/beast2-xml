@@ -74,25 +74,44 @@ parser.add_argument(
     help='How often to write logging to the screen (i.e., terminal).')
 
 parser.add_argument(
-    '--mimicBEAUti', action='store_true', default=False,
+    '--mimicBEAUti', action='store_true',
     help=('If specified, add attributes to the <beast> tag that mimic what '
           'BEAUti uses so that BEAUti will be able to load the XML.'))
 
 parser.add_argument(
     '--sequenceIdDateRegex', metavar='REGEX',
     help=('A regular expression that will be used to capture sequence dates '
-          'from their ids. The regular expression must have a single (...) '
-          'capture region. Regular expression matching is anchored to '
-          "the start of the id string (i.e., Python's re.match function "
-          'is used, not the re.search function), so you must explicitly '
-          'match the id from its beginning.'))
+          'from their ids. The regular expression must have three named '
+          'capture regions ("year", "month", and "day"). Regular expression '
+          'matching is anchored to the start of the id string (i.e., '
+          "Python's re.match function is used, not the re.search function), "
+          'so you must explicitly match the id from its beginning. For '
+          'example, you might use --sequenceIdDateRegex '
+          r"'^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'."))
 
 parser.add_argument(
-    '--sequenceIdDateRegexMayNotMatch', action='store_true', default=False,
-    help=('If specified (and --sequenceIdDateRegex is given) it will not be '
-          'considered an error if a sequence id does not match the given '
-          'regular expression. In that case, sequences will be assigned the '
-          'default date unless one is given via --age.'))
+    '--sequenceIdAgeRegex', metavar='REGEX',
+    help=('A regular expression that will be used to capture sequence ages '
+          'from their ids. The regular expression must have a single '
+          'capture region. Regular expression matching is anchored to the '
+          "start of the id string (i.e., Python's re.match function is used, "
+          'not the re.search function), so you must explicitly match the id '
+          'from its beginning. For example, you might use '
+          r"--sequenceIdAgeRegex '^.*_(\d+)$' to capture an age preceded by "
+          'an underscore at the very end of the sequence id. If '
+          '--sequenceIdDateRegex is also given, it takes precedence when '
+          'matching sequence ids.'))
+
+parser.add_argument(
+    # Note that --sequenceIdDateRegexMayNotMatch is maintained here for
+    # backwards compatibility.
+    '--sequenceIdRegexMayNotMatch', '--sequenceIdDateRegexMayNotMatch',
+    action='store_false',
+    dest='sequenceIdRegexMustMatch',
+    help=('If specified (and --sequenceIdDateRegex or --sequenceIdAgeRegex is '
+          'given) it will not be considered an error if a sequence id does '
+          'not match the given regular expression. In that case, sequences '
+          'will be assigned an age of zero unless one is given via --age.'))
 
 addFASTACommandLineOptions(parser)
 args = parser.parse_args()
@@ -101,8 +120,10 @@ reads = parseFASTACommandLineOptions(args)
 xml = BEAST2XML(
     template=args.templateFile, clockModel=args.clockModel,
     sequenceIdDateRegex=args.sequenceIdDateRegex,
-    sequenceIdDateRegexMayNotMatch=args.sequenceIdDateRegexMayNotMatch,
-)
+    sequenceIdAgeRegex=args.sequenceIdAgeRegex,
+    sequenceIdRegexMustMatch=args.sequenceIdRegexMustMatch,
+    dateUnit=args.dateUnit)
+
 xml.addSequences(reads)
 
 if args.age:
@@ -121,10 +142,8 @@ if args.age:
 
 print(xml.toString(
     chainLength=args.chainLength, defaultAge=args.defaultAge,
-    dateUnit=args.dateUnit, dateDirection=args.dateDirection,
-    logFileBasename=args.logFileBasename,
-    traceLogEvery=args.traceLogEvery,
-    treeLogEvery=args.treeLogEvery,
+    dateDirection=args.dateDirection, logFileBasename=args.logFileBasename,
+    traceLogEvery=args.traceLogEvery, treeLogEvery=args.treeLogEvery,
     screenLogEvery=args.screenLogEvery,
     mimicBEAUti=args.mimicBEAUti).replace('" /><sequence',
                                           '" />\n    <sequence'))

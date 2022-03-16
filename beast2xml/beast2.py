@@ -3,7 +3,9 @@ from __future__ import print_function, division
 import re
 import six
 import pkg_resources
+from datetime import date
 import xml.etree.ElementTree as ET
+
 from dark.reads import Reads
 
 
@@ -19,18 +21,23 @@ class BEAST2XML(object):
         and 'strict.
     @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence dates from their ids.
-        The regular expression must have a single (...) capture region.
-    @param sequenceIdDateRegexMayNotMatch: If C{True} it should not be
-        considered an error if a sequence id does not match the regular
-        expression given by C{sequenceIdDateRegex}.
+        See the explanation in ../bin/beast2-xml.py
+    @param sequenceIdAgeRegex: If not C{None}, gives a C{str} regular
+        expression that will be used to capture sequence ages from their ids.
+        See the explanation in ../bin/beast2-xml.py
+    @param sequenceIdRegexMustMatch: If C{True} it will be considered an error
+        if a sequence id does not match the regular expression given by
+        C{sequenceIdDateRegex} or C{sequenceIdAgeRegex}.
+    @param dateUnit: A C{str}, either 'day', 'month', or 'year' indicating the
+        date time unit.
     """
 
     TRACELOG_SUFFIX = '.log'
     TREELOG_SUFFIX = '.trees'
 
     def __init__(self, template=None, clockModel='strict',
-                 sequenceIdDateRegex=None,
-                 sequenceIdDateRegexMayNotMatch=False):
+                 sequenceIdDateRegex=None, sequenceIdAgeRegex=None,
+                 sequenceIdRegexMustMatch=True, dateUnit='year'):
         if template is None:
             self._tree = ET.parse(
                 pkg_resources.resource_filename(
@@ -42,10 +49,16 @@ class BEAST2XML(object):
         else:
             self._sequenceIdDateRegex = re.compile(sequenceIdDateRegex)
 
-        self._sequenceIdDateRegexMayNotMatch = sequenceIdDateRegexMayNotMatch
+        if sequenceIdAgeRegex is None:
+            self._sequenceIdAgeRegex = None
+        else:
+            self._sequenceIdAgeRegex = re.compile(sequenceIdAgeRegex)
+
+        self._sequenceIdRegexMustMatch = sequenceIdRegexMustMatch
         self._sequences = Reads()
         self._ageByFullId = {}
         self._ageByShortId = {}
+        self._dateUnit = dateUnit
 
     @staticmethod
     def findElements(tree):
@@ -98,22 +111,49 @@ class BEAST2XML(object):
         @param age: If not C{None}, the C{float} age of the sequence.
         """
         self._sequences.add(sequence)
+
         if age is not None:
             self.addAge(sequence.id, age)
-        elif self._sequenceIdDateRegex:
+            return
+
+        age = None
+
+        if self._sequenceIdDateRegex:
             match = self._sequenceIdDateRegex.match(sequence.id)
+            if match:
+                try:
+                    sequenceDate = date(*map(int, (match.group('year'),
+                                                   match.group('month'),
+                                                   match.group('day'))))
+                except IndexError:
+                    pass
+                else:
+                    days = (date.today() - sequenceDate).days
+                    if self._dateUnit == 'year':
+                        age = days / 365.25
+                    elif self._dateUnit == 'month':
+                        age = days / (365.25 / 12)
+                    else:
+                        assert self._dateUnit == 'day'
+                        age = days
+
+        if age is None and self._sequenceIdAgeRegex:
+            match = self._sequenceIdAgeRegex.match(sequence.id)
             if match:
                 try:
                     age = match.group(1)
                 except IndexError:
-                    match = None
-                else:
-                    self.addAge(sequence.id, float(age))
+                    pass
 
-            if not self._sequenceIdDateRegexMayNotMatch and not match:
+        if age is None:
+            if self._sequenceIdRegexMustMatch and (
+                    self._sequenceIdDateRegex or self._sequenceIdAgeRegex):
                 raise ValueError(
-                    'No sequence date could be found in %r '
-                    'using the sequence id date regex' % sequence.id)
+                    'No sequence date or age could be found in %r '
+                    'using the sequence id date/age regular expressions.' %
+                    sequence.id)
+        else:
+            self.addAge(sequence.id, float(age))
 
     def addSequences(self, sequences):
         """
@@ -122,9 +162,9 @@ class BEAST2XML(object):
         @param sequences: An iterable of C{dark.read} instances.
         """
         for sequence in sequences:
-            self._sequences.add(sequence)
+            self.addSequence(sequence)
 
-    def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
+    def toString(self, chainLength=None, defaultAge=0.0,
                  dateDirection='backward', logFileBasename=None,
                  traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
                  transformFunc=None, mimicBEAUti=False):
@@ -133,8 +173,6 @@ class BEAST2XML(object):
             the value in the template will be retained.
         @param defaultAge: The C{float} age to use for sequences that are not
             explicitly given an age via C{addAge}.
-        @param dateUnit: A C{str}, either 'day', 'month', or 'year'
-            indicating the date time unit.
         @param dateDirection: A C{str}, either 'backward' or 'forward'
             indicating whether dates are back in time from the present or
             forward in time from some point in the past.
@@ -192,8 +230,8 @@ class BEAST2XML(object):
         trait.set('traitname', 'date-' + dateDirection)
 
         # Set the date unit (if not 'year').
-        if dateUnit != 'year':
-            trait.set('units', dateUnit)
+        if self._dateUnit != 'year':
+            trait.set('units', self._dateUnit)
 
         if chainLength is not None:
             elements['run'].set('chainLength', str(chainLength))
