@@ -12,119 +12,150 @@ try:
 except ImportError:
     from mock import mock_open, patch
 
-open_ = ('builtins' if PY3 else '__builtin__') + '.open'
+open_ = ("builtins" if PY3 else "__builtin__") + ".open"
 
 
 class TestTemplate(TestCase):
     """
     Test the BEAST2XML class when a template is passed.
     """
-    @patch(open_, new_callable=mock_open,
-           read_data="<?xml version='1.0' encoding='UTF-8'?>")
+
+    @patch(
+        open_,
+        new_callable=mock_open,
+        read_data="<?xml version='1.0' encoding='UTF-8'?>",
+    )
     def testNoElementXML(self, mock):
         """
         Passing a template that has an XML header but no elements to
         BEAST2XML must raise a syntax error.
         """
-        error = '^no element found: line 1, column 38$'
-        assertRaisesRegex(self, ET.ParseError, error, BEAST2XML,
-                          template='filename')
+        error = "^no element found: line 1, column 38$"
+        assertRaisesRegex(self, ET.ParseError, error, BEAST2XML, template="filename")
 
-    @patch(open_, new_callable=mock_open, read_data='not XML')
+    @patch(open_, new_callable=mock_open, read_data="not XML")
     def testNonXMLTemplate(self, mock):
         """
         Passing a template that is not XML to BEAST2XML must raise a
         ParseError.
         """
-        error = '^syntax error: line 1, column 0$'
-        assertRaisesRegex(self, ET.ParseError, error, BEAST2XML,
-                          template='filename')
+        error = "^syntax error: line 1, column 0$"
+        assertRaisesRegex(self, ET.ParseError, error, BEAST2XML, template="filename")
 
-    @patch(open_, new_callable=mock_open,
-           read_data=("<?xml version='1.0' "
-                      "encoding='UTF-8'?><beast></beast>"))
+    @patch(
+        open_,
+        new_callable=mock_open,
+        read_data=("<?xml version='1.0' " "encoding='UTF-8'?><beast></beast>"),
+    )
     def testTemplateWithNoData(self, mock):
         """
         Passing a template that has no <data> tag to BEAST2XML must raise a
         ValueError when toString is called.
         """
-        xml = BEAST2XML(template='filename')
+        xml = BEAST2XML(template="filename")
         error = "^Could not find 'data' tag in XML template$"
         assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch(open_, new_callable=mock_open,
-           read_data=("<?xml version='1.0' encoding='UTF-8'?>"
-                      '<beast><data></data></beast>'))
+    @patch(
+        open_,
+        new_callable=mock_open,
+        read_data=(
+            "<?xml version='1.0' encoding='UTF-8'?>" "<beast><data></data></beast>"
+        ),
+    )
     def testTemplateWithNoRun(self, mock):
         """
         Passing a template that has no <run> tag to BEAST2XML must raise a
         ValueError when toString is called.
         """
-        xml = BEAST2XML(template='filename')
+        xml = BEAST2XML(template="filename")
         error = "^Could not find 'run' tag in XML template$"
         assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch(open_, new_callable=mock_open,
-           read_data=("<?xml version='1.0' encoding='UTF-8'?>"
-                      '<beast><data></data><run></run></beast>'))
+    @patch(
+        open_,
+        new_callable=mock_open,
+        read_data=(
+            "<?xml version='1.0' encoding='UTF-8'?>"
+            "<beast><data></data><run></run></beast>"
+        ),
+    )
     def testTemplateWithNoTrait(self, mock):
         """
         Passing a template that has no <trait> tag to BEAST2XML must raise
         a ValueError when toString is called.
         """
-        xml = BEAST2XML(template='filename')
-        error = (r"^Could not find '\./run/state/tree/trait' tag in XML "
-                 r"template$")
+        xml = BEAST2XML(template="filename")
+        error = r"^Could not find '\./run/state/tree/trait' tag in XML " r"template$"
         assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch(open_, new_callable=mock_open,
-           read_data=("<?xml version='1.0' encoding='UTF-8'?>"
-                      '<beast><data></data><run><state><tree><trait>'
-                      '</trait></tree></state></run></beast>'))
+    @patch(
+        open_,
+        new_callable=mock_open,
+        read_data=(
+            "<?xml version='1.0' encoding='UTF-8'?>"
+            "<beast><data></data><run><state><tree><trait>"
+            "</trait></tree></state></run></beast>"
+        ),
+    )
     def testTemplateWithNoTracelog(self, mock):
         """
         Passing a template that has no tracelog logger tag to BEAST2XML
         must raise a ValueError when toString is called.
         """
-        xml = BEAST2XML(template='filename')
-        error = (r'^Could not find "\./run/logger\[@id=\'tracelog\'\]" tag '
-                 r'in XML template$')
+        xml = BEAST2XML(template="filename")
+        error = (
+            r'^Could not find "\./run/logger\[@id=\'tracelog\'\]" tag '
+            r"in XML template$"
+        )
         assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch(open_, new_callable=mock_open,
-           read_data=("<?xml version='1.0' encoding='UTF-8'?>"
-                      '<beast><data></data><run>'
-                      '<state><tree><trait></trait></tree></state>'
-                      '<logger id="tracelog"></logger>'
-                      '</run></beast>'))
+    @patch(
+        open_,
+        new_callable=mock_open,
+        read_data=(
+            "<?xml version='1.0' encoding='UTF-8'?>"
+            "<beast><data></data><run>"
+            "<state><tree><trait></trait></tree></state>"
+            '<logger id="tracelog"></logger>'
+            "</run></beast>"
+        ),
+    )
     def testTemplateWithNoTreelog(self, mock):
         """
         Passing a template that has no treelog logger tag to BEAST2XML must
         raise a ValueError when toString is called.
         """
-        xml = BEAST2XML(template='filename')
+        xml = BEAST2XML(template="filename")
         error = (
-            r'^Could not find '
+            r"^Could not find "
             r'"\./run/logger\[@id=\'treelog\.t:alignment\'\]" '
-            r'tag in XML template$')
+            r"tag in XML template$"
+        )
         assertRaisesRegex(self, ValueError, error, xml.toString)
 
-    @patch(open_, new_callable=mock_open,
-           read_data=("<?xml version='1.0' encoding='UTF-8'?>"
-                      '<beast><data></data><run>'
-                      '<state><tree><trait></trait></tree></state>'
-                      '<logger id="tracelog"></logger>'
-                      '<logger id="treelog.t:alignment"></logger>'
-                      '</run></beast>'))
+    @patch(
+        open_,
+        new_callable=mock_open,
+        read_data=(
+            "<?xml version='1.0' encoding='UTF-8'?>"
+            "<beast><data></data><run>"
+            "<state><tree><trait></trait></tree></state>"
+            '<logger id="tracelog"></logger>'
+            '<logger id="treelog.t:alignment"></logger>'
+            "</run></beast>"
+        ),
+    )
     def testTemplateWithNoScreenlog(self, mock):
         """
         Passing a template that has no screenlog logger tag to BEAST2XML
         must raise a ValueError when toString is called.
         """
-        xml = BEAST2XML(template='filename')
+        xml = BEAST2XML(template="filename")
         error = (
             r'^Could not find "\./run/logger\[@id=\'screenlog\'\]" '
-            r'tag in XML template$')
+            r"tag in XML template$"
+        )
         assertRaisesRegex(self, ValueError, error, xml.toString)
 
     @patch(open_, new_callable=mock_open)
@@ -134,27 +165,23 @@ class TestTemplate(TestCase):
         FileNotFoundError (PY3) or IOError (PY2).
         """
         errorClass = builtins.FileNotFoundError if PY3 else IOError
-        mock.side_effect = errorClass('abc')
-        error = '^abc$'
-        assertRaisesRegex(self, errorClass, error, BEAST2XML,
-                          template='filename')
+        mock.side_effect = errorClass("abc")
+        error = "^abc$"
+        assertRaisesRegex(self, errorClass, error, BEAST2XML, template="filename")
 
     def testTemplateIsOpenFile(self):
         """
         BEAST2XML must run correctly when initialized from an open file
         pointer.
         """
-        ET.fromstring(
-            BEAST2XML(
-                template=StringIO(BEAST2XML().toString())
-            ).toString()
-        )
+        ET.fromstring(BEAST2XML(template=StringIO(BEAST2XML().toString())).toString())
 
 
 class TestMisc(TestCase):
     """
     Miscellaneous tests.
     """
+
     def testNoArgsGivesValidXML(self):
         """
         Passing no template or clock model to BEAST2XML and no arguments to
@@ -170,10 +197,9 @@ class TestMisc(TestCase):
         IOError (PY2).
         """
         errorClass = builtins.FileNotFoundError if PY3 else IOError
-        mock.side_effect = errorClass('abc')
-        error = '^abc$'
-        assertRaisesRegex(self, errorClass, error, BEAST2XML,
-                          clockModel='filename')
+        mock.side_effect = errorClass("abc")
+        error = "^abc$"
+        assertRaisesRegex(self, errorClass, error, BEAST2XML, clockModel="filename")
 
 
 class ClockModelMixin(object):
@@ -186,50 +212,49 @@ class ClockModelMixin(object):
         Adding a sequence must result in the expected XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        xml.addSequence(Read('id1', 'ACTG'))
+        xml.addSequence(Read("id1", "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence must be the only child of the <data> tag.
-        data = elements['data']
+        data = elements["data"]
         self.assertEqual(1, len(data))
         child = data[0]
-        self.assertEqual('sequence', child.tag)
-        self.assertEqual('ACTG', child.get('value'))
-        self.assertEqual('4', child.get('totalcount'))
-        self.assertEqual('id1', child.get('taxon'))
-        self.assertEqual('seq_id1', child.get('id'))
+        self.assertEqual("sequence", child.tag)
+        self.assertEqual("ACTG", child.get("value"))
+        self.assertEqual("4", child.get("totalcount"))
+        self.assertEqual("id1", child.get("taxon"))
+        self.assertEqual("seq_id1", child.get("id"))
         self.assertIs(None, child.text)
 
         # The sequence id with the default age of 0.0 must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find('id1=0.0') > -1)
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find("id1=0.0") > -1)
 
     def testSequenceIdAgeRegex(self):
         """
         Using a sequence id age regex must result in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL,
-                        sequenceIdAgeRegex='^.*_([0-9]+)')
-        xml.addSequence(Read('id1_80_xxx', 'ACTG'))
+        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, sequenceIdAgeRegex="^.*_([0-9]+)")
+        xml.addSequence(Read("id1_80_xxx", "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with the default age of 0.0 must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find('id1_80_xxx=80.0') > -1)
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find("id1_80_xxx=80.0") > -1)
 
     def testSequenceIdAgeRegexNonMatching(self):
         """
         Using a sequence id age regex with a sequence id that does not match
         must result in a ValueError.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL,
-                        sequenceIdAgeRegex='^.*_([0-9]+)')
-        error = (r"^No sequence date or age could be found in 'id1' using the "
-                 r"sequence id date/age regular expressions\.$")
-        assertRaisesRegex(self, ValueError, error, xml.addSequence,
-                          Read('id1', 'ACTG'))
+        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, sequenceIdAgeRegex="^.*_([0-9]+)")
+        error = (
+            r"^No sequence date or age could be found in 'id1' using the "
+            r"sequence id date/age regular expressions\.$"
+        )
+        assertRaisesRegex(self, ValueError, error, xml.addSequence, Read("id1", "ACTG"))
 
     def testSequenceIdRegexNonMatchingNotAnError(self):
         """
@@ -239,97 +264,95 @@ class ClockModelMixin(object):
         """
         xml = BEAST2XML(
             clockModel=self.CLOCK_MODEL,
-            sequenceIdAgeRegex='^.*_([0-9]+)',
-            sequenceIdRegexMustMatch=False
+            sequenceIdAgeRegex="^.*_([0-9]+)",
+            sequenceIdRegexMustMatch=False,
         )
-        xml.addSequence(Read('id1_xxx', 'ACTG'))
+        xml.addSequence(Read("id1_xxx", "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.toString(defaultAge=50)))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with the passed default age must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find('id1_xxx=50.0') > -1)
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find("id1_xxx=50.0") > -1)
 
     def testOneSequenceWithDateRegexAndDateUnitInYears(self):
         """
         Adding a sequence with a date regex and date units in years must
         result in the expected XML.
         """
-        sequenceDate = (date.today() -
-                        timedelta(days=2 * 365)).strftime('%Y-%m-%d')
-        r = r'^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'
-        id_ = 'id1_' + sequenceDate
+        sequenceDate = (date.today() - timedelta(days=2 * 365)).strftime("%Y-%m-%d")
+        r = r"^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)"
+        id_ = "id1_" + sequenceDate
 
-        xml = BEAST2XML(
-            clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r)
-        xml.addSequence(Read(id_, 'ACTG'))
+        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r)
+        xml.addSequence(Read(id_, "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with an age of ~2 years must be in the traits.
-        trait = elements['./run/state/tree/trait']
+        trait = elements["./run/state/tree/trait"]
         # Note that the following is not exact!
-        self.assertTrue(trait.text.find(id_ + '=1.99') > -1)
-        self.assertIs(None, trait.get('units'))
+        self.assertTrue(trait.text.find(id_ + "=1.99") > -1)
+        self.assertIs(None, trait.get("units"))
 
     def testOneSequenceWithDateRegexAndDateUnitInMonths(self):
         """
         Adding a sequence with a date regex and date units in months must
         result in the expected XML.
         """
-        sequenceDate = (date.today() -
-                        timedelta(days=2 * (365.25 / 12))).strftime('%Y-%m-%d')
-        r = r'^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'
-        id_ = 'id1_' + sequenceDate
+        sequenceDate = (date.today() - timedelta(days=2 * (365.25 / 12))).strftime(
+            "%Y-%m-%d"
+        )
+        r = r"^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)"
+        id_ = "id1_" + sequenceDate
 
         xml = BEAST2XML(
-            clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r,
-            dateUnit='month')
-        xml.addSequence(Read(id_, 'ACTG'))
+            clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r, dateUnit="month"
+        )
+        xml.addSequence(Read(id_, "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with an age of ~2 months must be in the traits.
-        trait = elements['./run/state/tree/trait']
+        trait = elements["./run/state/tree/trait"]
         # Note that the following is not exact!
-        self.assertTrue(trait.text.find(id_ + '=1.9') > -1)
-        self.assertEqual('month', trait.get('units'))
+        self.assertTrue(trait.text.find(id_ + "=1.9") > -1)
+        self.assertEqual("month", trait.get("units"))
 
     def testOneSequenceWithDateRegexAndDateUnitInDays(self):
         """
         Adding a sequence with a date regex and date units in days must
         result in the expected XML.
         """
-        sequenceDate = (date.today() -
-                        timedelta(days=10)).strftime('%Y-%m-%d')
-        r = r'^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'
-        id_ = 'id1_' + sequenceDate
+        sequenceDate = (date.today() - timedelta(days=10)).strftime("%Y-%m-%d")
+        r = r"^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)"
+        id_ = "id1_" + sequenceDate
 
         xml = BEAST2XML(
-            clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r,
-            dateUnit='day')
-        xml.addSequence(Read(id_, 'ACTG'))
+            clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r, dateUnit="day"
+        )
+        xml.addSequence(Read(id_, "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with an age of 10 days must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find(id_ + '=10.0') > -1)
-        self.assertEqual('day', trait.get('units'))
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find(id_ + "=10.0") > -1)
+        self.assertEqual("day", trait.get("units"))
 
     def testOneSequenceWithAge(self):
         """
         Adding a sequence with an age must result in the expected XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        xml.addSequence(Read('id1', 'ACTG'))
-        xml.addAge('id1', 44)
+        xml.addSequence(Read("id1", "ACTG"))
+        xml.addAge("id1", 44)
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with the given age must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find('id1=44.0') > -1)
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find("id1=44.0") > -1)
 
     def testOneSequenceWithAgeAddedTogether(self):
         """
@@ -337,80 +360,78 @@ class ClockModelMixin(object):
         in the expected XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        xml.addSequence(Read('id1', 'ACTG'), 44)
+        xml.addSequence(Read("id1", "ACTG"), 44)
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with the given age must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find('id1=44.0') > -1)
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find("id1=44.0") > -1)
 
     def testAddSequences(self):
         """
         Adding several sequences must result in the expected XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        xml.addSequences([
-            Read('id1', 'GG'), Read('id2', 'CC'), Read('id3', 'AA')])
+        xml.addSequences([Read("id1", "GG"), Read("id2", "CC"), Read("id3", "AA")])
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
         # The sequences must be the children of the <data> tag.
-        data = elements['data']
+        data = elements["data"]
         self.assertEqual(3, len(data))
 
         child = data[0]
-        self.assertEqual('sequence', child.tag)
-        self.assertEqual('GG', child.get('value'))
-        self.assertEqual('4', child.get('totalcount'))
-        self.assertEqual('id1', child.get('taxon'))
-        self.assertEqual('seq_id1', child.get('id'))
+        self.assertEqual("sequence", child.tag)
+        self.assertEqual("GG", child.get("value"))
+        self.assertEqual("4", child.get("totalcount"))
+        self.assertEqual("id1", child.get("taxon"))
+        self.assertEqual("seq_id1", child.get("id"))
         self.assertIs(None, child.text)
 
         child = data[1]
-        self.assertEqual('sequence', child.tag)
-        self.assertEqual('CC', child.get('value'))
-        self.assertEqual('4', child.get('totalcount'))
-        self.assertEqual('id2', child.get('taxon'))
-        self.assertEqual('seq_id2', child.get('id'))
+        self.assertEqual("sequence", child.tag)
+        self.assertEqual("CC", child.get("value"))
+        self.assertEqual("4", child.get("totalcount"))
+        self.assertEqual("id2", child.get("taxon"))
+        self.assertEqual("seq_id2", child.get("id"))
         self.assertIs(None, child.text)
 
         child = data[2]
-        self.assertEqual('sequence', child.tag)
-        self.assertEqual('AA', child.get('value'))
-        self.assertEqual('4', child.get('totalcount'))
-        self.assertEqual('id3', child.get('taxon'))
-        self.assertEqual('seq_id3', child.get('id'))
+        self.assertEqual("sequence", child.tag)
+        self.assertEqual("AA", child.get("value"))
+        self.assertEqual("4", child.get("totalcount"))
+        self.assertEqual("id3", child.get("taxon"))
+        self.assertEqual("seq_id3", child.get("id"))
         self.assertIs(None, child.text)
 
         # The sequence ids with the default age of 0.0 must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find('id1=0.0') > -1)
-        self.assertTrue(trait.text.find('id2=0.0') > -1)
-        self.assertTrue(trait.text.find('id3=0.0') > -1)
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find("id1=0.0") > -1)
+        self.assertTrue(trait.text.find("id2=0.0") > -1)
+        self.assertTrue(trait.text.find("id3=0.0") > -1)
 
     def testChainLength(self):
         """
         Passing a chain length to toString must result in the expected XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(
-            xml.toString(chainLength=100)))
+        tree = ET.ElementTree(ET.fromstring(xml.toString(chainLength=100)))
         elements = BEAST2XML.findElements(tree)
-        self.assertEqual('100', elements['run'].get('chainLength'))
+        self.assertEqual("100", elements["run"].get("chainLength"))
 
     def testDefaultAge(self):
         """
         Passing a default age to toString must result in the expected XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        xml.addSequence(Read('id1', 'ACTG'))
+        xml.addSequence(Read("id1", "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.toString(defaultAge=33.0)))
         elements = BEAST2XML.findElements(tree)
 
         # The sequence id with the default age of 0.0 must be in the traits.
-        trait = elements['./run/state/tree/trait']
-        self.assertTrue(trait.text.find('id1=33.0') > -1)
+        trait = elements["./run/state/tree/trait"]
+        self.assertTrue(trait.text.find("id1=33.0") > -1)
 
     def testLogFileBaseName(self):
         """
@@ -418,17 +439,14 @@ class ClockModelMixin(object):
         log file names in the XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(
-            xml.toString(logFileBasename='xxx')))
+        tree = ET.ElementTree(ET.fromstring(xml.toString(logFileBasename="xxx")))
         elements = BEAST2XML.findElements(tree)
 
         logger = elements["./run/logger[@id='tracelog']"]
-        self.assertEqual('xxx' + BEAST2XML.TRACELOG_SUFFIX,
-                         logger.get('fileName'))
+        self.assertEqual("xxx" + BEAST2XML.TRACELOG_SUFFIX, logger.get("fileName"))
 
         logger = elements["./run/logger[@id='treelog.t:alignment']"]
-        self.assertEqual('xxx' + BEAST2XML.TREELOG_SUFFIX,
-                         logger.get('fileName'))
+        self.assertEqual("xxx" + BEAST2XML.TREELOG_SUFFIX, logger.get("fileName"))
 
     def testTraceLogEvery(self):
         """
@@ -436,12 +454,11 @@ class ClockModelMixin(object):
         XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(
-            xml.toString(traceLogEvery=300)))
+        tree = ET.ElementTree(ET.fromstring(xml.toString(traceLogEvery=300)))
         elements = BEAST2XML.findElements(tree)
 
         logger = elements["./run/logger[@id='tracelog']"]
-        self.assertEqual('300', logger.get('logEvery'))
+        self.assertEqual("300", logger.get("logEvery"))
 
     def testTreeLogEvery(self):
         """
@@ -449,12 +466,11 @@ class ClockModelMixin(object):
         XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(
-            xml.toString(treeLogEvery=300)))
+        tree = ET.ElementTree(ET.fromstring(xml.toString(treeLogEvery=300)))
         elements = BEAST2XML.findElements(tree)
 
         logger = elements["./run/logger[@id='treelog.t:alignment']"]
-        self.assertEqual('300', logger.get('logEvery'))
+        self.assertEqual("300", logger.get("logEvery"))
 
     def testScreenLogEvery(self):
         """
@@ -462,26 +478,25 @@ class ClockModelMixin(object):
         XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(
-            xml.toString(screenLogEvery=300)))
+        tree = ET.ElementTree(ET.fromstring(xml.toString(screenLogEvery=300)))
         elements = BEAST2XML.findElements(tree)
 
         logger = elements["./run/logger[@id='screenlog']"]
-        self.assertEqual('300', logger.get('logEvery'))
+        self.assertEqual("300", logger.get("logEvery"))
 
     def testTransformFunction(self):
         """
         Passing a transform function to toString must result in the expected
         XML.
         """
+
         def transform(tree):
-            return ET.ElementTree(ET.fromstring(
-                "<?xml version='1.0' encoding='UTF-8'?><hello/>"))
+            return ET.ElementTree(
+                ET.fromstring("<?xml version='1.0' encoding='UTF-8'?><hello/>")
+            )
 
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        expected = ("<?xml version='1.0' encoding='" +
-                    ('UTF-8' if PY3 else 'utf-8') +
-                    "'?>\n<hello />")
+        expected = "<?xml version='1.0' encoding='utf-8'?>\n<hello />"
         self.assertEqual(expected, xml.toString(transformFunc=transform))
 
     def testDefaultDateDirection(self):
@@ -490,12 +505,11 @@ class ClockModelMixin(object):
         direction in the XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(
-            xml.toString()))
+        tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
-        trait = elements['./run/state/tree/trait']
-        self.assertEqual('date-backward', trait.get('traitname'))
+        trait = elements["./run/state/tree/trait"]
+        self.assertEqual("date-backward", trait.get("traitname"))
 
     def testDateDirection(self):
         """
@@ -503,12 +517,11 @@ class ClockModelMixin(object):
         XML.
         """
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(
-            xml.toString(dateDirection='forward')))
+        tree = ET.ElementTree(ET.fromstring(xml.toString(dateDirection="forward")))
         elements = BEAST2XML.findElements(tree)
 
-        trait = elements['./run/state/tree/trait']
-        self.assertEqual('date-forward', trait.get('traitname'))
+        trait = elements["./run/state/tree/trait"]
+        self.assertEqual("date-forward", trait.get("traitname"))
 
     def testNoDateUnit(self):
         """
@@ -519,20 +532,20 @@ class ClockModelMixin(object):
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
-        trait = elements['./run/state/tree/trait']
-        self.assertEqual(None, trait.get('units'))
+        trait = elements["./run/state/tree/trait"]
+        self.assertEqual(None, trait.get("units"))
 
     def testDateUnit(self):
         """
         Passing a dateUnit value to the constructor must result in the expected
         XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, dateUnit='day')
+        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, dateUnit="day")
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         elements = BEAST2XML.findElements(tree)
 
-        trait = elements['./run/state/tree/trait']
-        self.assertEqual('day', trait.get('units'))
+        trait = elements["./run/state/tree/trait"]
+        self.assertEqual("day", trait.get("units"))
 
     def testDontMimicBEAUti(self):
         """
@@ -542,8 +555,8 @@ class ClockModelMixin(object):
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         root = tree.getroot()
-        self.assertEqual(None, root.get('beautitemplate'))
-        self.assertEqual(None, root.get('beautistatus'))
+        self.assertEqual(None, root.get("beautitemplate"))
+        self.assertEqual(None, root.get("beautistatus"))
 
     def testMimicBEAUti(self):
         """
@@ -553,15 +566,16 @@ class ClockModelMixin(object):
         xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.toString(mimicBEAUti=True)))
         root = tree.getroot()
-        self.assertEqual('Standard', root.get('beautitemplate'))
-        self.assertEqual('', root.get('beautistatus'))
+        self.assertEqual("Standard", root.get("beautitemplate"))
+        self.assertEqual("", root.get("beautistatus"))
 
 
 class TestRandomLocalClockModel(TestCase, ClockModelMixin):
     """
     Test when a 'random-local' clock model is used.
     """
-    CLOCK_MODEL = 'random-local'
+
+    CLOCK_MODEL = "random-local"
 
     def testExpectedTemplate(self):
         """
@@ -572,10 +586,12 @@ class TestRandomLocalClockModel(TestCase, ClockModelMixin):
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         root = tree.getroot()
         logger = root.find(
-            './run/logger[@id="tracelog"]/log[@idref="ucldMean.c:alignment"]')
+            './run/logger[@id="tracelog"]/log[@idref="ucldMean.c:alignment"]'
+        )
         self.assertTrue(logger is not None)
         logger = root.find(
-            './run/logger[@id="tracelog"]/log[@idref="ucldStdev.c:alignment"]')
+            './run/logger[@id="tracelog"]/log[@idref="ucldStdev.c:alignment"]'
+        )
         self.assertTrue(logger is not None)
 
 
@@ -583,7 +599,8 @@ class TestRelaxedExponentialClockModel(TestCase, ClockModelMixin):
     """
     Test when a 'relaxed-exponential' clock model is used.
     """
-    CLOCK_MODEL = 'relaxed-exponential'
+
+    CLOCK_MODEL = "relaxed-exponential"
 
     def testExpectedTemplate(self):
         """
@@ -594,7 +611,8 @@ class TestRelaxedExponentialClockModel(TestCase, ClockModelMixin):
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         root = tree.getroot()
         logger = root.find(
-            './run/logger[@id="tracelog"]/log[@idref="ucedMean.c:alignment"]')
+            './run/logger[@id="tracelog"]/log[@idref="ucedMean.c:alignment"]'
+        )
         self.assertTrue(logger is not None)
 
 
@@ -602,7 +620,8 @@ class TestRelaxedLognormalClockModel(TestCase, ClockModelMixin):
     """
     Test when a 'relaxed-lognormal' clock model is used.
     """
-    CLOCK_MODEL = 'relaxed-lognormal'
+
+    CLOCK_MODEL = "relaxed-lognormal"
 
     def testExpectedTemplate(self):
         """
@@ -613,10 +632,12 @@ class TestRelaxedLognormalClockModel(TestCase, ClockModelMixin):
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         root = tree.getroot()
         logger = root.find(
-            './run/logger[@id="tracelog"]/log[@idref="ucldMean.c:alignment"]')
+            './run/logger[@id="tracelog"]/log[@idref="ucldMean.c:alignment"]'
+        )
         self.assertTrue(logger is not None)
         logger = root.find(
-            './run/logger[@id="tracelog"]/log[@idref="ucldStdev.c:alignment"]')
+            './run/logger[@id="tracelog"]/log[@idref="ucldStdev.c:alignment"]'
+        )
         self.assertTrue(logger is not None)
 
 
@@ -624,7 +645,8 @@ class TestStrictClockModel(TestCase, ClockModelMixin):
     """
     Test when a 'strict' clock model is used.
     """
-    CLOCK_MODEL = 'strict'
+
+    CLOCK_MODEL = "strict"
 
     def testExpectedTemplate(self):
         """
@@ -635,5 +657,6 @@ class TestStrictClockModel(TestCase, ClockModelMixin):
         tree = ET.ElementTree(ET.fromstring(xml.toString()))
         root = tree.getroot()
         logger = root.find(
-            './run/logger[@id="tracelog"]/log[@idref="clockRate.c:alignment"]')
+            './run/logger[@id="tracelog"]/log[@idref="clockRate.c:alignment"]'
+        )
         self.assertTrue(logger is not None)
