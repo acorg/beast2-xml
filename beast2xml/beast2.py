@@ -2,9 +2,12 @@ from __future__ import print_function, division
 
 import re
 import six
-import pkg_resources
 from datetime import date
 import xml.etree.ElementTree as ET
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
 
 from dark.reads import Reads
 
@@ -32,16 +35,22 @@ class BEAST2XML(object):
         date time unit.
     """
 
-    TRACELOG_SUFFIX = '.log'
-    TREELOG_SUFFIX = '.trees'
+    TRACELOG_SUFFIX = ".log"
+    TREELOG_SUFFIX = ".trees"
 
-    def __init__(self, template=None, clockModel='strict',
-                 sequenceIdDateRegex=None, sequenceIdAgeRegex=None,
-                 sequenceIdRegexMustMatch=True, dateUnit='year'):
+    def __init__(
+        self,
+        template=None,
+        clockModel="strict",
+        sequenceIdDateRegex=None,
+        sequenceIdAgeRegex=None,
+        sequenceIdRegexMustMatch=True,
+        dateUnit="year",
+    ):
         if template is None:
             self._tree = ET.parse(
-                pkg_resources.resource_filename(
-                    'beast2xml', 'templates/%s.xml' % clockModel))
+                files("beast2xml").joinpath(f"templates/{clockModel}.xml")
+            )
         else:
             self._tree = ET.parse(template)
         if sequenceIdDateRegex is None:
@@ -73,7 +82,6 @@ class BEAST2XML(object):
         """
         result = {}
         root = tree.getroot()
-
         for tag in ("data",
                     "run",
                     "./run/state/tree/trait",
@@ -87,7 +95,6 @@ class BEAST2XML(object):
                 raise ValueError('Could not find %r tag in XML template' % tag)
             if tag == 'data':
                 data_id = element.get('id')
-
             result[tag] = element
 
         return result
@@ -127,19 +134,26 @@ class BEAST2XML(object):
             match = self._sequenceIdDateRegex.match(sequence.id)
             if match:
                 try:
-                    sequenceDate = date(*map(int, (match.group('year'),
-                                                   match.group('month'),
-                                                   match.group('day'))))
+                    sequenceDate = date(
+                        *map(
+                            int,
+                            (
+                                match.group("year"),
+                                match.group("month"),
+                                match.group("day"),
+                            ),
+                        )
+                    )
                 except IndexError:
                     pass
                 else:
                     days = (date.today() - sequenceDate).days
-                    if self._dateUnit == 'year':
+                    if self._dateUnit == "year":
                         age = days / 365.25
-                    elif self._dateUnit == 'month':
+                    elif self._dateUnit == "month":
                         age = days / (365.25 / 12)
                     else:
-                        assert self._dateUnit == 'day'
+                        assert self._dateUnit == "day"
                         age = days
 
         if age is None and self._sequenceIdAgeRegex:
@@ -152,11 +166,12 @@ class BEAST2XML(object):
 
         if age is None:
             if self._sequenceIdRegexMustMatch and (
-                    self._sequenceIdDateRegex or self._sequenceIdAgeRegex):
+                self._sequenceIdDateRegex or self._sequenceIdAgeRegex
+            ):
                 raise ValueError(
-                    'No sequence date or age could be found in %r '
-                    'using the sequence id date/age regular expressions.' %
-                    sequence.id)
+                    "No sequence date or age could be found in %r "
+                    "using the sequence id date/age regular expressions." % sequence.id
+                )
         else:
             self.addAge(sequence.id, float(age))
 
@@ -206,10 +221,11 @@ class BEAST2XML(object):
         """
         if mimicBEAUti:
             root = self._tree.getroot()
-            root.set('beautitemplate', 'Standard')
-            root.set('beautistatus', '')
+            root.set("beautitemplate", "Standard")
+            root.set("beautistatus", "")
 
         elements = self.findElements(self._tree)
+
 
         # Get data element
         data = elements['data']
@@ -218,9 +234,6 @@ class BEAST2XML(object):
         # Delete any existing children of the data node.
         for child in list(data):
             data.remove(child)
-
-
-
 
         trait = elements['./run/state/tree/trait']
         ##### Conisder line below to remove previous age info from template
@@ -241,38 +254,40 @@ class BEAST2XML(object):
         ##### Conisder line below to add new age info to template. Maybe removing line above.
         # trait.set('value', ','.join(traitText)')
 
+
         # Set the date direction.
-        trait.set('traitname', 'date-' + dateDirection)
+        trait.set("traitname", "date-" + dateDirection)
 
         # Set the date unit (if not 'year').
-        if self._dateUnit != 'year':
-            trait.set('units', self._dateUnit)
+        if self._dateUnit != "year":
+            trait.set("units", self._dateUnit)
 
         if chainLength is not None:
-            elements['run'].set('chainLength', str(chainLength))
+            elements["run"].set("chainLength", str(chainLength))
 
         if logFileBasename is not None:
             # Trace log.
             logger = elements["./run/logger[@id='tracelog']"]
-            logger.set('fileName', logFileBasename + self.TRACELOG_SUFFIX)
+            logger.set("fileName", logFileBasename + self.TRACELOG_SUFFIX)
             # Tree log.
             logger = elements[tree_logger_key]
             logger.set('fileName', logFileBasename + self.TREELOG_SUFFIX)
 
+
         if traceLogEvery is not None:
             logger = elements["./run/logger[@id='tracelog']"]
-            logger.set('logEvery', str(traceLogEvery))
+            logger.set("logEvery", str(traceLogEvery))
 
         if treeLogEvery is not None:
             logger = elements[tree_logger_key]
             logger.set('logEvery', str(treeLogEvery))
 
+
         if screenLogEvery is not None:
             logger = elements["./run/logger[@id='screenlog']"]
-            logger.set('logEvery', str(screenLogEvery))
+            logger.set("logEvery", str(screenLogEvery))
 
-        tree = (self._tree if transformFunc is None
-                else transformFunc(self._tree))
+        tree = self._tree if transformFunc is None else transformFunc(self._tree)
 
         return tree
 
@@ -317,8 +332,7 @@ class BEAST2XML(object):
                                  transformFunc=transformFunc, mimicBEAUti=mimicBEAUti)
 
         stream = six.StringIO()
-        tree.write(stream, 'unicode' if six.PY3 else 'utf-8',
-                   xml_declaration=True)
+        tree.write(stream, "unicode" if six.PY3 else "utf-8", xml_declaration=True)
         return stream.getvalue()
 
     def toXml(self, path, chainLength=None, defaultAge=0.0,
