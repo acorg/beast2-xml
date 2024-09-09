@@ -235,8 +235,7 @@ def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
 
 An example of using the Python class can be found in the
 [beast2-xml.py](bin/beast2-xml.py) script.  Small examples showing all
-functionality can be found in the tests in
-[test/testBeast2.py](test/testBeast2.py).
+functionality can be found in the tests in [test/test_beast2.py](test/test_beast2.py).
 
 ## Development
 

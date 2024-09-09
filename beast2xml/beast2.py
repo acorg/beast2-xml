@@ -82,18 +82,19 @@ class BEAST2XML(object):
         """
         result = {}
         root = tree.getroot()
-
-        for tag in (
-            "data",
-            "run",
-            "./run/state/tree/trait",
-            "./run/logger[@id='tracelog']",
-            "./run/logger[@id='treelog.t:alignment']",
-            "./run/logger[@id='screenlog']",
-        ):
+        for tag in ("data",
+                    "run",
+                    "./run/state/tree/trait",
+                    "./run/logger[@id='tracelog']",
+                    "./run/logger[@id='treelog.t:",
+                    "./run/logger[@id='screenlog']"):
+            if tag == "./run/logger[@id='treelog.t:":
+                tag = tag + data_id + "']"
             element = root.find(tag)
             if element is None:
-                raise ValueError("Could not find %r tag in XML template" % tag)
+                raise ValueError('Could not find %r tag in XML template' % tag)
+            if tag == 'data':
+                data_id = element.get('id')
             result[tag] = element
 
         return result
@@ -183,18 +184,10 @@ class BEAST2XML(object):
         for sequence in sequences:
             self.addSequence(sequence)
 
-    def toString(
-        self,
-        chainLength=None,
-        defaultAge=0.0,
-        dateDirection="backward",
-        logFileBasename=None,
-        traceLogEvery=None,
-        treeLogEvery=None,
-        screenLogEvery=None,
-        transformFunc=None,
-        mimicBEAUti=False,
-    ):
+    def _to_xml_tree(self, chainLength=None, defaultAge=0.0,
+                 dateDirection='backward', logFileBasename=None,
+                 traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
+                 transformFunc=None, mimicBEAUti=False):
         """
         @param chainLength: The C{int} length of the MCMC chain. If C{None},
             the value in the template will be retained.
@@ -224,7 +217,7 @@ class BEAST2XML(object):
             produce.
         @raise ValueError: If any required tree elements cannot be found
             (raised by our call to self.findElements).
-        @return: C{str} XML.
+        @return: C{str} Element tree.
         """
         if mimicBEAUti:
             root = self._tree.getroot()
@@ -233,38 +226,34 @@ class BEAST2XML(object):
 
         elements = self.findElements(self._tree)
 
+
+        # Get data element
+        data = elements['data']
+        data_id = data.get('id')
+        tree_logger_key = "./run/logger[@id='treelog.t:" + data_id + "']"
         # Delete any existing children of the data node.
-        data = elements["data"]
-        for child in data:
+        for child in list(data):
             data.remove(child)
 
+        trait = elements['./run/state/tree/trait']
+        ##### Conisder line below to remove previous age info from template
+        # trait.set('value', '')
         # Add in all sequences.
-        trait = elements["./run/state/tree/trait"]
         traitText = []
         for sequence in self._sequences:
             id_ = sequence.id
             shortId = id_.split()[0]
             traitText.append(
-                "%s=%f"
-                % (
-                    shortId,
-                    (
-                        self._ageByFullId.get(id_)
-                        or self._ageByShortId.get(shortId)
-                        or defaultAge
-                    ),
-                )
-            )
-            ET.SubElement(
-                data,
-                "sequence",
-                id="seq_" + shortId,
-                taxon=shortId,
-                totalcount="4",
-                value=sequence.sequence,
-            )
+                '%s=%f' % (shortId, (self._ageByFullId.get(id_) or
+                                     self._ageByShortId.get(shortId) or
+                                     defaultAge)))
+            ET.SubElement(data, 'sequence', id='seq_' + shortId, taxon=shortId,
+                          totalcount='4', value=sequence.sequence)
 
-        trait.text = ",\n".join(traitText) + "\n"
+        trait.text = ',\n'.join(traitText) + '\n'
+        ##### Conisder line below to add new age info to template. Maybe removing line above.
+        # trait.set('value', ','.join(traitText)')
+
 
         # Set the date direction.
         trait.set("traitname", "date-" + dateDirection)
@@ -281,16 +270,18 @@ class BEAST2XML(object):
             logger = elements["./run/logger[@id='tracelog']"]
             logger.set("fileName", logFileBasename + self.TRACELOG_SUFFIX)
             # Tree log.
-            logger = elements["./run/logger[@id='treelog.t:alignment']"]
-            logger.set("fileName", logFileBasename + self.TREELOG_SUFFIX)
+            logger = elements[tree_logger_key]
+            logger.set('fileName', logFileBasename + self.TREELOG_SUFFIX)
+
 
         if traceLogEvery is not None:
             logger = elements["./run/logger[@id='tracelog']"]
             logger.set("logEvery", str(traceLogEvery))
 
         if treeLogEvery is not None:
-            logger = elements["./run/logger[@id='treelog.t:alignment']"]
-            logger.set("logEvery", str(treeLogEvery))
+            logger = elements[tree_logger_key]
+            logger.set('logEvery', str(treeLogEvery))
+
 
         if screenLogEvery is not None:
             logger = elements["./run/logger[@id='screenlog']"]
@@ -298,6 +289,93 @@ class BEAST2XML(object):
 
         tree = self._tree if transformFunc is None else transformFunc(self._tree)
 
+        return tree
+
+    def toString(self, chainLength=None, defaultAge=0.0,
+                 dateDirection='backward', logFileBasename=None,
+                 traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
+                 transformFunc=None, mimicBEAUti=False):
+        """
+        @param chainLength: The C{int} length of the MCMC chain. If C{None},
+            the value in the template will be retained.
+        @param defaultAge: The C{float} age to use for sequences that are not
+            explicitly given an age via C{addAge}.
+        @param dateDirection: A C{str}, either 'backward' or 'forward'
+            indicating whether dates are back in time from the present or
+            forward in time from some point in the past.
+        @param logFileBasename: The C{str} The base filename to write logs to.
+            A .log or .trees suffix will be appended to this to make the
+            actual log file names.  If C{None}, the log file names in the
+            template will be retained.
+        @param traceLogEvery: An C{int} specifying how often to write to the
+            trace log file. If C{None}, the value in the template will be
+            retained.
+        @param treeLogEvery: An C{int} specifying how often to write to the
+            tree log file. If C{None}, the value in the template will be
+            retained.
+        @param screenLogEvery: An C{int} specifying how often to write to the
+            terminal (screen) log. If C{None}, the value in the template will
+            be retained.
+        @param transformFunc: If not C{None} A callable that will be passed
+            the C{ElementTree} instance and which must return an C{ElementTree}
+            instance.
+        @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
+            in the way that BEAUti does, to allow BEAUti to load the XML we
+            produce.
+        @raise ValueError: If any required tree elements cannot be found
+            (raised by our call to self.findElements).
+        @return: C{str} representation of XML.
+        """
+        tree = self._to_xml_tree(chainLength=chainLength, defaultAge=defaultAge,
+                                 dateDirection=dateDirection, logFileBasename=logFileBasename,
+                                 traceLogEvery=traceLogEvery, treeLogEvery=treeLogEvery, screenLogEvery=screenLogEvery,
+                                 transformFunc=transformFunc, mimicBEAUti=mimicBEAUti)
+
         stream = six.StringIO()
         tree.write(stream, "unicode" if six.PY3 else "utf-8", xml_declaration=True)
         return stream.getvalue()
+
+    def toXml(self, path, chainLength=None, defaultAge=0.0,
+                 dateDirection='backward', logFileBasename=None,
+                 traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
+                 transformFunc=None, mimicBEAUti=False):
+        """
+        @param path: The C{str} filename to write the XML to.
+        @param chainLength: The C{int} length of the MCMC chain. If C{None},
+            the value in the template will be retained.
+        @param defaultAge: The C{float} age to use for sequences that are not
+            explicitly given an age via C{addAge}.
+        @param dateDirection: A C{str}, either 'backward' or
+        'forward'
+            indicating whether dates are back in time from the present or
+            forward in time from some point in the past.
+        @param logFileBasename: The C{str} The base filename to write logs to.
+            A .log or .trees suffix will be appended to this to make the
+            actual log file names.  If C{None}, the log file names in the
+            template will be retained.
+        @param traceLogEvery: An C{int} specifying how often to write to the
+            trace log file. If C{None}, the value in the template will be
+            retained.
+        @param treeLogEvery: An C{int} specifying how often to write to the
+            tree log file. If C{None}, the value in the template will be
+            retained.
+        @param screenLogEvery: An C{int} specifying how often to write to the
+            terminal (screen) log. If C{None}, the value in the template will
+            be retained.
+        @param transformFunc: If not C{None} A callable that will be passed
+            the C{ElementTree} instance and which must return an C{ElementTree}
+            instance.
+        @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
+            in the way that BEAUti does, to allow BEAUti to load the XML we
+            produce.
+        @raise ValueError: If any required tree elements cannot be found
+            (raised by our call to self.findElements).
+        @return: None.
+        """
+        if not isinstance(path, str):
+            raise TypeError('filename must be a string.')
+        tree = self._to_xml_tree(chainLength=chainLength, defaultAge=defaultAge,
+                                 dateDirection=dateDirection, logFileBasename=logFileBasename,
+                                 traceLogEvery=traceLogEvery, treeLogEvery=treeLogEvery, screenLogEvery=screenLogEvery,
+                                 transformFunc=transformFunc, mimicBEAUti=mimicBEAUti)
+        tree.write(path, 'unicode' if six.PY3 else 'utf-8', xml_declaration=True)
