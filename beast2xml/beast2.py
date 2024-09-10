@@ -10,6 +10,7 @@ except ImportError:
     from importlib_resources import files
 
 from dark.reads import Reads
+import pandas as pd
 
 
 class BEAST2XML(object):
@@ -70,7 +71,7 @@ class BEAST2XML(object):
         self._dateUnit = dateUnit
 
     @staticmethod
-    def findElements(tree):
+    def find_elements(tree):
         """
         Check that an XML tree has the required structure and return the found
         elements.
@@ -99,7 +100,29 @@ class BEAST2XML(object):
 
         return result
 
-    def addAge(self, sequenceId, age):
+    def add_ages(self, age_data, seperator='\t'):
+        if isinstance(age_data, str):
+            age_data = pd.read_csv(age_data, sep=seperator)
+        if isinstance(age_data, pd.DataFrame):
+            if len(age_data.columns) != 2:
+                raise ValueError("age_data columns must have two columns")
+            if 'id' in age_data.columns:
+                age_data = age_data.set_index('id')
+            elif 'strain' in age_data.columns:
+                age_data = age_data.set_index('strain')
+            else:
+                raise ValueError("An age_data column must be id or strain")
+            age_data = age_data.iloc[0, :]
+        if isinstance(age_data, pd.Series):
+            age_data = age_data.to_dict()
+        if not isinstance(age_data, dict):
+            raise ValueError('age_data must be a C{dict} a C{pd.DataFrame}, a C{pd.Series} or a path to tsv/csv.')
+        self._ageByFullId.update(age_data)
+        age_data = {key.split()[0]: value for key, value in age_data.items()}
+        self._ageByShortId.update(age_data)
+
+
+    def add_age(self, sequenceId, age):
         """
         Specify the age of a sequence.
 
@@ -115,7 +138,7 @@ class BEAST2XML(object):
         self._ageByShortId[sequenceId.split()[0]] = age
         self._ageByFullId[sequenceId] = age
 
-    def addSequence(self, sequence, age=None):
+    def add_sequence(self, sequence, age=None):
         """
         Add a sequence (optionally with an age) to the run.
 
@@ -125,7 +148,7 @@ class BEAST2XML(object):
         self._sequences.add(sequence)
 
         if age is not None:
-            self.addAge(sequence.id, age)
+            self.add_age(sequence.id, age)
             return
 
         age = None
@@ -173,16 +196,16 @@ class BEAST2XML(object):
                     "using the sequence id date/age regular expressions." % sequence.id
                 )
         else:
-            self.addAge(sequence.id, float(age))
+            self.add_age(sequence.id, float(age))
 
-    def addSequences(self, sequences):
+    def add_sequences(self, sequences):
         """
         Add a set of sequences to the run.
 
         @param sequences: An iterable of C{dark.read} instances.
         """
         for sequence in sequences:
-            self.addSequence(sequence)
+            self.add_sequence(sequence)
 
     def _to_xml_tree(self, chainLength=None, defaultAge=0.0,
                  dateDirection='backward', logFileBasename=None,
@@ -224,7 +247,7 @@ class BEAST2XML(object):
             root.set("beautitemplate", "Standard")
             root.set("beautistatus", "")
 
-        elements = self.findElements(self._tree)
+        elements = self.find_elements(self._tree)
 
 
         # Get data element
@@ -236,17 +259,21 @@ class BEAST2XML(object):
             data.remove(child)
 
         trait = elements['./run/state/tree/trait']
-        ##### Conisder line below to remove previous age info from template
-        # trait.set('value', '')
+        ##### Consider line below to remove previous age info from template
+        trait.set('value', '')
         # Add in all sequences.
         traitText = []
         for sequence in self._sequences:
             id_ = sequence.id
             shortId = id_.split()[0]
+            if shortId in self._ageByShortId:
+                age = self._ageByShortId[shortId]
+            else:
+                age = defaultAge
             traitText.append(
                 '%s=%f' % (shortId, (self._ageByFullId.get(id_) or
                                      self._ageByShortId.get(shortId) or
-                                     defaultAge)))
+                                     age)))
             ET.SubElement(data, 'sequence', id='seq_' + shortId, taxon=shortId,
                           totalcount='4', value=sequence.sequence)
 
@@ -291,10 +318,10 @@ class BEAST2XML(object):
 
         return tree
 
-    def toString(self, chainLength=None, defaultAge=0.0,
-                 dateDirection='backward', logFileBasename=None,
-                 traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-                 transformFunc=None, mimicBEAUti=False):
+    def to_string(self, chainLength=None, defaultAge=0.0,
+                  dateDirection='backward', logFileBasename=None,
+                  traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
+                  transformFunc=None, mimicBEAUti=False):
         """
         @param chainLength: The C{int} length of the MCMC chain. If C{None},
             the value in the template will be retained.
@@ -335,10 +362,10 @@ class BEAST2XML(object):
         tree.write(stream, "unicode" if six.PY3 else "utf-8", xml_declaration=True)
         return stream.getvalue()
 
-    def toXml(self, path, chainLength=None, defaultAge=0.0,
-                 dateDirection='backward', logFileBasename=None,
-                 traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-                 transformFunc=None, mimicBEAUti=False):
+    def to_xml(self, path, chainLength=None, defaultAge=0.0,
+               dateDirection='backward', logFileBasename=None,
+               traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
+               transformFunc=None, mimicBEAUti=False):
         """
         @param path: The C{str} filename to write the XML to.
         @param chainLength: The C{int} length of the MCMC chain. If C{None},

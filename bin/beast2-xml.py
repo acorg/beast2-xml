@@ -185,7 +185,7 @@ xml = BEAST2XML(
     dateUnit=args.dateUnit,
 )
 
-xml.addSequences(reads)
+xml.add_sequences(reads)
 
 if args.age:
     # Flatten lists of lists that we get from using both nargs='+' and
@@ -199,10 +199,10 @@ if args.age:
 
     for ageInfo in ages:
         id_, age = ageInfo.rsplit(sep="=", maxsplit=1)
-        xml.addAge(id_.strip(), float(age.strip()))
+        xml.add_age(id_.strip(), float(age.strip()))
 
 print(
-    xml.toString(
+    xml.to_string(
         chainLength=args.chainLength,
         defaultAge=args.defaultAge,
         dateDirection=args.dateDirection,

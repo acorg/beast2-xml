@@ -165,7 +165,7 @@ The simplest possible usage is
 ```python
 from beast2xml import BEAST2XML
 
-print(BEAST2XML().toString())
+print(BEAST2XML().to_string())
 ```
 
 There are several options you can pass to the `BEAST2XML` constructor:
