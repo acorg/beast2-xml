@@ -112,7 +112,7 @@ class BEAST2XML(object):
                 age_data = age_data.set_index('strain')
             else:
                 raise ValueError("An age_data column must be id or strain")
-            age_data = age_data.iloc[0, :]
+            age_data = age_data.iloc[:, 0]
         if isinstance(age_data, pd.Series):
             age_data = age_data.to_dict()
         if not isinstance(age_data, dict):
@@ -259,27 +259,24 @@ class BEAST2XML(object):
             data.remove(child)
 
         trait = elements['./run/state/tree/trait']
-        ##### Consider line below to remove previous age info from template
-        trait.set('value', '')
+
         # Add in all sequences.
-        traitText = []
-        for sequence in self._sequences:
-            id_ = sequence.id
-            shortId = id_.split()[0]
-            if shortId in self._ageByShortId:
-                age = self._ageByShortId[shortId]
-            else:
-                age = defaultAge
-            traitText.append(
-                '%s=%f' % (shortId, (self._ageByFullId.get(id_) or
-                                     self._ageByShortId.get(shortId) or
-                                     age)))
-            ET.SubElement(data, 'sequence', id='seq_' + shortId, taxon=shortId,
+        trait_text = []
+        for sequence in sorted(self._sequences): # Sorting adds the sequences alphabetically like in BEAUti.
+            id = sequence.id
+            short_id = id.split()[0]
+            trait_text.append(
+                short_id + '=' + str(
+                    self._ageByFullId.get(id) or self._ageByShortId.get(short_id) or defaultAge
+                ))
+            ET.SubElement(data, 'sequence', id='seq_' + short_id, spec="Sequence", taxon=short_id,
                           totalcount='4', value=sequence.sequence)
 
-        trait.text = ',\n'.join(traitText) + '\n'
-        ##### Conisder line below to add new age info to template. Maybe removing line above.
-        # trait.set('value', ','.join(traitText)')
+
+        trait.set('value', '') # Removes old age info
+        trait.text = ',\n'.join(trait_text) + '\n' # Adds new age info
+        ##### Conisder line below to add new age info to template. Maybe removing the 2 lines above.
+        #trait.set('value', ','.join(trait_text))
 
 
         # Set the date direction.
