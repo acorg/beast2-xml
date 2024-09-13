@@ -411,3 +411,52 @@ class BEAST2XML(object):
                                  traceLogEvery=traceLogEvery, treeLogEvery=treeLogEvery, screenLogEvery=screenLogEvery,
                                  transformFunc=transformFunc, mimicBEAUti=mimicBEAUti)
         tree.write(path, 'unicode' if six.PY3 else 'utf-8', xml_declaration=True)
+
+    def change_parameter_statnode(self, parameter, value=None, dimension=None, lower=None, upper=None, wild_card_ending=True):
+        """ Change the values of the statnode for a parameter.
+
+
+        Parameters
+        ----------
+        parameter: str
+            The name of the parameter.
+        value: int or float
+            The value of the parameter.
+        dimension:  int
+            The dimensions over which a parameter is estimated.
+        lower:  int, float or str
+            The lower bound of the parameter.
+        upper: int, float or str
+            The upper bound of the parameter.
+        wild_card_ending: bool (default True)
+            If true parameters starting with parameter will be searched for.
+
+
+        """
+        if all(arg is None for arg in [value, dimension, lower, upper]):
+            raise ValueError('Either a value, dimension, lower or upper argument must be provided.')
+
+        if wild_card_ending:
+            parameter_nodes = [potential_parameter_node
+                               for potential_parameter_node in self._tree.findall("./run/state/parameter")
+                               if potential_parameter_node.attrib['id'].startswith(parameter)]
+        else:
+            parameter_nodes = self._tree.findall("./run/state/parameter[@id='%s']" % parameter)
+        if len(parameter_nodes) == 0:
+            raise ValueError('No parameter with id %s (or starting with) was found.' % parameter)
+        if len(parameter_nodes) > 1:
+            raise ValueError('More than one parameter with id %s (or starting with) was found.' % parameter)
+        parameter_node = parameter_nodes[0]
+        if value is not None:
+            parameter_node.text = str(value)
+        if dimension is not None:
+            if not isinstance(dimension, int):
+                raise ValueError('Dimension must be an integer.')
+            parameter_node.set('dimension', str(dimension))
+        if lower is not None:
+            parameter_node.set('lower', str(lower))
+        if upper is not None:
+            parameter_node.set('upper', str(upper))
+
+
+
