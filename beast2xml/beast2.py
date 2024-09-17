@@ -209,7 +209,7 @@ class BEAST2XML(object):
             self.add_sequence(sequence)
 
     def _to_xml_tree(self, chainLength=None, defaultAge=None,
-                     dateDirection='backward', logFileBasename=None,
+                     dateDirection=None, logFileBasename=None,
                      traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
                      transformFunc=None, mimicBEAUti=False):
         """
@@ -282,13 +282,15 @@ class BEAST2XML(object):
 
         trait_order = [sequence.id.split()[0] for sequence in self._sequences]  # ensures order is the same as BEAUti's.
         trait_text = [short_id + '=' + str(age_by_short_id[short_id]) for short_id in trait_order]
-        trait.set('value', '')  # Removes old age info
-        trait.text = ',\n'.join(trait_text) + '\n'  # Adds new age info
-        #### Conisder line below to add new age info to template. Maybe removing the 2 lines above.
-        # trait.set('value', ','.join(trait_text)) # Replaces old age info with new age info
-
-        # Set the date direction.
-        trait.set("traitname", "date-" + dateDirection)
+        if dateDirection is None:
+            trait.set('value', ','.join(trait_text))  # Replaces old age info with new age info
+            trait.set("traitname", "date")
+        else:
+            if dateDirection not in ['backward', 'forward']:
+                raise ValueError('If supplied dateDirection must be either "backward" or "forward".')
+            trait.set('value', '')  # Removes old age info
+            trait.text = ',\n'.join(trait_text) + '\n'  # Adds new age info
+            trait.set("traitname", "date-" + dateDirection)
 
         # Set the date unit (if not 'year').
         if self._dateUnit != "year":
@@ -322,7 +324,7 @@ class BEAST2XML(object):
         return tree
 
     def to_string(self, chainLength=None, defaultAge=None,
-                  dateDirection='backward', logFileBasename=None,
+                  dateDirection=None, logFileBasename=None,
                   traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
                   transformFunc=None, mimicBEAUti=False):
         """
@@ -367,7 +369,7 @@ class BEAST2XML(object):
         return stream.getvalue()
 
     def to_xml(self, path, chainLength=None, defaultAge=None,
-               dateDirection='backward', logFileBasename=None,
+               dateDirection=None, logFileBasename=None,
                traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
                transformFunc=None, mimicBEAUti=False):
         """
@@ -412,8 +414,8 @@ class BEAST2XML(object):
                                  transformFunc=transformFunc, mimicBEAUti=mimicBEAUti)
         tree.write(path, 'unicode' if six.PY3 else 'utf-8', xml_declaration=True)
 
-    def change_parameter_statnode(self, parameter, value=None, dimension=None, lower=None, upper=None, wild_card_ending=True):
-        """ Change the values of the statnode for a parameter.
+    def change_parameter_state_node(self, parameter, value=None, dimension=None, lower=None, upper=None, wild_card_ending=True):
+        """ Change the values of the stateNode for a parameter.
 
 
         Parameters
