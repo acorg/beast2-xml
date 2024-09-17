@@ -218,7 +218,7 @@ class BEAST2XML(object):
         @param defaultAge: If None and no age has been supplied for a sequence an error is thrown. Ages can be supplied
             addAge or add_ages methods. If a float or int is provided this value will be used if a sequences age has not
             been provided.
-        @param dateDirection: A C{str}, either 'backward' or 'forward'
+        @param dateDirection: A C{str}, either 'backward', 'forward' or "date"
             indicating whether dates are back in time from the present or
             forward in time from some point in the past.
         @param logFileBasename: The C{str} The base filename to write logs to.
@@ -284,13 +284,18 @@ class BEAST2XML(object):
         trait_text = [short_id + '=' + str(age_by_short_id[short_id]) for short_id in trait_order]
         if dateDirection is None:
             trait.set('value', ','.join(trait_text))  # Replaces old age info with new age info
-            trait.set("traitname", "date")
+            if trait.get("traitname") is None:
+                raise ValueError('No traitname attibute in dateTrait element of template xml.'+
+                                 ' Alternatively, his can be set through dateDirection argument.')
         else:
-            if dateDirection not in ['backward', 'forward']:
-                raise ValueError('If supplied dateDirection must be either "backward" or "forward".')
+            if dateDirection not in ['backward', 'forward', 'date']:
+                raise ValueError('If supplied dateDirection must be either "backward", "forward" or "date".')
             trait.set('value', '')  # Removes old age info
             trait.text = ',\n'.join(trait_text) + '\n'  # Adds new age info
-            trait.set("traitname", "date-" + dateDirection)
+            if dateDirection == 'date':
+                trait.set("traitname", dateDirection)
+            else:
+                trait.set("traitname", "date-" + dateDirection)
 
         # Set the date unit (if not 'year').
         if self._dateUnit != "year":
@@ -333,7 +338,7 @@ class BEAST2XML(object):
         @param defaultAge: If None and no age has been supplied for a sequence an error is thrown. Ages can be supplied
             addAge or add_ages method. If a float or int is provided this value will be used if a sequences age has not
             been provided.
-        @param dateDirection: A C{str}, either 'backward' or 'forward'
+        @param dateDirection: A C{str}, either 'backward', 'forward' or "date"
             indicating whether dates are back in time from the present or
             forward in time from some point in the past.
         @param logFileBasename: The C{str} The base filename to write logs to.
@@ -379,8 +384,7 @@ class BEAST2XML(object):
         @param defaultAge: If None and no age has been supplied for a sequence an error is thrown. Ages can be supplied
             addAge or add_ages method. If a float or int is provided this value will be used if a sequences age has not
             been provided.
-        @param dateDirection: A C{str}, either 'backward' or
-        'forward'
+        @param dateDirection: A C{str}, either 'backward', 'forward' or "date"
             indicating whether dates are back in time from the present or
             forward in time from some point in the past.
         @param logFileBasename: The C{str} The base filename to write logs to.
