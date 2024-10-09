@@ -211,7 +211,7 @@ class ClockModelMixin(object):
         """
         Adding a sequence must result in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         xml.add_sequence(Read("id1", "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
@@ -235,7 +235,7 @@ class ClockModelMixin(object):
         """
         Using a sequence id age regex must result in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, sequenceIdAgeRegex="^.*_([0-9]+)")
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL, sequence_id_age_regex="^.*_([0-9]+)")
         xml.add_sequence(Read("id1_80_xxx", "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
@@ -249,7 +249,7 @@ class ClockModelMixin(object):
         Using a sequence id age regex with a sequence id that does not match
         must result in a ValueError.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, sequenceIdAgeRegex="^.*_([0-9]+)")
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL, sequence_id_age_regex="^.*_([0-9]+)")
         error = (
             r"^No sequence date or age could be found in 'id1' using the "
             r"sequence id date/age regular expressions\.$"
@@ -259,16 +259,16 @@ class ClockModelMixin(object):
     def testSequenceIdRegexNonMatchingNotAnError(self):
         """
         Using a sequence id age regex that doesn't match is not an error if
-        we pass sequenceIdRegexMustMatch=False, in which case the default
+        we pass sequence_id_regex_must_match=False, in which case the default
         age should be assigned.
         """
         xml = BEAST2XML(
-            clockModel=self.CLOCK_MODEL,
-            sequenceIdAgeRegex="^.*_([0-9]+)",
-            sequenceIdRegexMustMatch=False,
+            clock_model=self.CLOCK_MODEL,
+            sequence_id_age_regex="^.*_([0-9]+)",
+            sequence_id_regex_must_match=False,
         )
         xml.add_sequence(Read("id1_xxx", "ACTG"))
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(defaultAge=50)))
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(default_age=50)))
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the passed default age must be in the traits.
@@ -284,7 +284,7 @@ class ClockModelMixin(object):
         r = r"^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)"
         id_ = "id1_" + sequenceDate
 
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL, sequence_id_date_regex=r)
         xml.add_sequence(Read(id_, "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
@@ -307,7 +307,7 @@ class ClockModelMixin(object):
         id_ = "id1_" + sequenceDate
 
         xml = BEAST2XML(
-            clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r, dateUnit="month"
+            clock_model=self.CLOCK_MODEL, sequence_id_date_regex=r, date_unit="month"
         )
         xml.add_sequence(Read(id_, "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
@@ -329,7 +329,7 @@ class ClockModelMixin(object):
         id_ = "id1_" + sequenceDate
 
         xml = BEAST2XML(
-            clockModel=self.CLOCK_MODEL, sequenceIdDateRegex=r, dateUnit="day"
+            clock_model=self.CLOCK_MODEL, sequence_id_date_regex=r, date_unit="day"
         )
         xml.add_sequence(Read(id_, "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
@@ -344,7 +344,7 @@ class ClockModelMixin(object):
         """
         Adding a sequence with an age must result in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         xml.add_sequence(Read("id1", "ACTG"))
         xml.add_age("id1", 44)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
@@ -359,7 +359,7 @@ class ClockModelMixin(object):
         Adding a sequence with an age (both passed to addSequence) must result
         in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         xml.add_sequence(Read("id1", "ACTG"), 44)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
@@ -372,7 +372,7 @@ class ClockModelMixin(object):
         """
         Adding several sequences must result in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         xml.add_sequences([Read("id1", "GG"), Read("id2", "CC"), Read("id3", "AA")])
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
@@ -415,18 +415,18 @@ class ClockModelMixin(object):
         """
         Passing a chain length to toString must result in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(chainLength=100)))
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(chain_length=100)))
         elements = BEAST2XML.find_elements(tree)
-        self.assertEqual("100", elements["run"].get("chainLength"))
+        self.assertEqual("100", elements["run"].get("chain_length"))
 
     def testDefaultAge(self):
         """
         Passing a default age to toString must result in the expected XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         xml.add_sequence(Read("id1", "ACTG"))
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(defaultAge=33.0)))
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(default_age=33.0)))
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the default age of 0.0 must be in the traits.
@@ -438,8 +438,8 @@ class ClockModelMixin(object):
         Passing a log file base name to toString must result in the expected
         log file names in the XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(logFileBasename="xxx")))
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(log_file_basename="xxx")))
         elements = BEAST2XML.find_elements(tree)
 
         logger = elements["./run/logger[@id='tracelog']"]
@@ -450,11 +450,11 @@ class ClockModelMixin(object):
 
     def testTraceLogEvery(self):
         """
-        Passing a traceLogEvery value to toString must result in the expected
+        Passing a trace_log_every value to toString must result in the expected
         XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(traceLogEvery=300)))
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(trace_log_every=300)))
         elements = BEAST2XML.find_elements(tree)
 
         logger = elements["./run/logger[@id='tracelog']"]
@@ -462,11 +462,11 @@ class ClockModelMixin(object):
 
     def testTreeLogEvery(self):
         """
-        Passing a treeLogEvery value to toString must result in the expected
+        Passing a tree_log_every value to toString must result in the expected
         XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(treeLogEvery=300)))
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(tree_log_every=300)))
         elements = BEAST2XML.find_elements(tree)
 
         logger = elements["./run/logger[@id='treelog.t:alignment']"]
@@ -474,11 +474,11 @@ class ClockModelMixin(object):
 
     def testScreenLogEvery(self):
         """
-        Passing a screenLogEvery value to toString must result in the expected
+        Passing a screen_log_every value to toString must result in the expected
         XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(screenLogEvery=300)))
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(screen_log_every=300)))
         elements = BEAST2XML.find_elements(tree)
 
         logger = elements["./run/logger[@id='screenlog']"]
@@ -495,16 +495,16 @@ class ClockModelMixin(object):
                 ET.fromstring("<?xml version='1.0' encoding='UTF-8'?><hello/>")
             )
 
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         expected = "<?xml version='1.0' encoding='utf-8'?>\n<hello />"
-        self.assertEqual(expected, xml.to_string(transformFunc=transform))
+        self.assertEqual(expected, xml.to_string(transform_func=transform))
 
     def testDefaultDateDirection(self):
         """
-        Passing no dateDirection toString must result in the expected date
+        Passing no date_direction toString must result in the expected date
         direction in the XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
 
@@ -513,11 +513,11 @@ class ClockModelMixin(object):
 
     def testDateDirection(self):
         """
-        Passing a dateDirection value to toString must result in the expected
+        Passing a date_direction value to toString must result in the expected
         XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(dateDirection="forward")))
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(date_direction="forward")))
         elements = BEAST2XML.find_elements(tree)
 
         trait = elements["./run/state/tree/trait"]
@@ -525,10 +525,10 @@ class ClockModelMixin(object):
 
     def testNoDateUnit(self):
         """
-        Passing no dateUnit value to the constructor must result in the
+        Passing no date_unit value to the constructor must result in the
         expected XML (with no 'units' attribute in the trait).
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
 
@@ -537,10 +537,10 @@ class ClockModelMixin(object):
 
     def testDateUnit(self):
         """
-        Passing a dateUnit value to the constructor must result in the expected
+        Passing a date_unit value to the constructor must result in the expected
         XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL, dateUnit="day")
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL, date_unit="day")
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
 
@@ -549,10 +549,10 @@ class ClockModelMixin(object):
 
     def testDontMimicBEAUti(self):
         """
-        If mimicBEAUti is not passed to toString the BEAUti attributes must
+        If mimic_beauti is not passed to toString the BEAUti attributes must
         not appear in the <beast> tag in the XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         root = tree.getroot()
         self.assertEqual(None, root.get("beautitemplate"))
@@ -560,11 +560,11 @@ class ClockModelMixin(object):
 
     def testMimicBEAUti(self):
         """
-        Passing mimicBEAUti=True to toString must result in the expected
+        Passing mimic_beauti=True to toString must result in the expected
         BEAUti attributes in the <beast> tag in the XML.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
-        tree = ET.ElementTree(ET.fromstring(xml.to_string(mimicBEAUti=True)))
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
+        tree = ET.ElementTree(ET.fromstring(xml.to_string(mimic_beauti=True)))
         root = tree.getroot()
         self.assertEqual("Standard", root.get("beautitemplate"))
         self.assertEqual("", root.get("beautistatus"))
@@ -582,7 +582,7 @@ class TestRandomLocalClockModel(TestCase, ClockModelMixin):
         Passing a 'random-local' clock model must result in the expected
         XML template being loaded.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         root = tree.getroot()
         logger = root.find(
@@ -607,7 +607,7 @@ class TestRelaxedExponentialClockModel(TestCase, ClockModelMixin):
         Passing a 'relaxed-exponential' clock model must result in the expected
         XML template being loaded.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         root = tree.getroot()
         logger = root.find(
@@ -628,7 +628,7 @@ class TestRelaxedLognormalClockModel(TestCase, ClockModelMixin):
         Passing a 'relaxed-lognormal' clock model must result in the expected
         XML template being loaded.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         root = tree.getroot()
         logger = root.find(
@@ -653,7 +653,7 @@ class TestStrictClockModel(TestCase, ClockModelMixin):
         Passing a 'strict' clock model must result in the expected
         XML template being loaded.
         """
-        xml = BEAST2XML(clockModel=self.CLOCK_MODEL)
+        xml = BEAST2XML(clock_model=self.CLOCK_MODEL)
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         root = tree.getroot()
         logger = root.find(

@@ -45,14 +45,14 @@ Run `beast2-xml.py --help` to see currently supported options:
 
 ```sh
 $ beast2-xml.py --help
-usage: beast2-xml.py [-h] [--clockModel MODEL | --templateFile FILENAME]
-                     [--chainLength LENGTH] [--age ID=N [ID=N ...]]
-                     [--defaultAge N] [--dateUnit UNIT]
-                     [--dateDirection DIRECTION]
-                     [--logFileBasename BASE-FILENAME] [--traceLogEvery N]
-                     [--treeLogEvery N] [--screenLogEvery N] [--mimicBEAUti]
-                     [--sequenceIdDateRegex REGEX]
-                     [--sequenceIdAgeRegex REGEX]
+usage: beast2-xml.py [-h] [--clock_model MODEL | --templateFile FILENAME]
+                     [--chain_length LENGTH] [--age ID=N [ID=N ...]]
+                     [--default_age N] [--date_unit UNIT]
+                     [--date_direction DIRECTION]
+                     [--log_file_basename BASE-FILENAME] [--trace_log_every N]
+                     [--tree_log_every N] [--screen_log_every N] [--mimic_beauti]
+                     [--sequence_id_date_regex REGEX]
+                     [--sequence_id_age_regex REGEX]
                      [--sequenceIdRegexMayNotMatch] [--fastaFile FILENAME]
                      [--readClass CLASSNAME] [--fasta | --fastq | --fasta-ss]
 
@@ -61,43 +61,43 @@ BEAST2 input file on stdout.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --clockModel MODEL    Specify the clock model. Possible values are 'random-
+  --clock_model MODEL    Specify the clock model. Possible values are 'random-
                         local', 'relaxed-exponential', 'relaxed-lognormal', or
                         'strict' (default: strict)
   --templateFile FILENAME
                         The XML template file to use. (default: None)
-  --chainLength LENGTH  The MCMC chain length. (default: None)
+  --chain_length LENGTH  The MCMC chain length. (default: None)
   --age ID=N [ID=N ...]
                         The age of a sequence. The format is a sequence id, an
                         equals sign, then the age. For convenience, just the
                         first part of a full sequence id (i.e., up to the
                         first space) may be given. May be specified multiple
                         times. (default: None)
-  --defaultAge N        The age to use for sequences that are not explicitly
+  --default_age N        The age to use for sequences that are not explicitly
                         given an age via --age. (default: 0.0)
-  --dateUnit UNIT       Specify the date unit. Possible values are 'day',
+  --date_unit UNIT       Specify the date unit. Possible values are 'day',
                         'month', or 'year'. (default: year)
-  --dateDirection DIRECTION
+  --date_direction DIRECTION
                         Specify whether dates are back in time from the
                         present or forward in time from some point in the
                         past. Possible values are 'forward' or 'backward'.
                         (default: backward)
-  --logFileBasename BASE-FILENAME
+  --log_file_basename BASE-FILENAME
                         The base filename to write logs to. A ".log" or
                         ".trees" suffix will be appended to this to make
                         complete log file names. (default: beast-output)
-  --traceLogEvery N     How often to write to the trace log file. (default:
+  --trace_log_every N     How often to write to the trace log file. (default:
                         2000)
-  --treeLogEvery N      How often to write to the tree log file. (default:
+  --tree_log_every N      How often to write to the tree log file. (default:
                         2000)
-  --screenLogEvery N    How often to write logging to the screen (i.e.,
+  --screen_log_every N    How often to write logging to the screen (i.e.,
                         terminal). (default: 2000)
-  --mimicBEAUti         If specified, add attributes to the <beast> tag that
+  --mimic_beauti         If specified, add attributes to the <beast> tag that
                         mimic what BEAUti uses so that BEAUti will be able to
                         load the XML. (default: False)
 
 
-  --sequenceIdDateRegex REGEX
+  --sequence_id_date_regex REGEX
                         A regular expression that will be used to capture sequence
                         dates from their ids. The regular expression must have three
                         named capture regions ("year", "month", and "day"). Regular
@@ -105,20 +105,20 @@ optional arguments:
                         (i.e., Python's re.match function is used, not the re.search
                         function), so you must explicitly match the id from its beginning.
                         For example, you might use
-                        --sequenceIdDateRegex '^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'.
+                        --sequence_id_date_regex '^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'.
                         (default: None)
-  --sequenceIdAgeRegex REGEX
+  --sequence_id_age_regex REGEX
                         A regular expression that will be used to capture sequence ages
                         from their ids. The regular expression must have a single capture
                         region. Regular expression matching is anchored to the start of
                         the id string (i.e., Python's re.match function is used, not the
                         re.search function), so you must explicitly match the id from its
-                        beginning. For example, you might use --sequenceIdAgeRegex '^.*_(\d+)$'
+                        beginning. For example, you might use --sequence_id_age_regex '^.*_(\d+)$'
                         to capture an age preceded by an underscore at the very end of the
-                        sequence id. If --sequenceIdDateRegex is also given, it
+                        sequence id. If --sequence_id_date_regex is also given, it
                         takes precedence when matching sequence ids. (default: None)
   --sequenceIdRegexMayNotMatch
-                        If specified (and --sequenceIdDateRegex or --sequenceIdAgeRegex is given)
+                        If specified (and --sequence_id_date_regex or --sequence_id_age_regex is given)
                         it will not be considered an error if a sequence id does not
                         match the given regular expression. In that case, sequences will be assigned
                         an age of zero unless one is given via --age. (default: False)
@@ -176,20 +176,20 @@ class BEAST2XML(object):
     Create BEAST2 XML.
 
     @param template: A C{str} filename or an open file pointer to read the
-        XML template from. If C{None}, a template based on C{clockModel}
+        XML template from. If C{None}, a template based on C{clock_model}
         will be used.
-    @param clockModel: A C{str} specifying the clock model. Possible values
+    @param clock_model: A C{str} specifying the clock model. Possible values
         are 'random-local', 'relaxed-exponential', 'relaxed-lognormal',
         and 'strict.
-    @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
+    @param sequence_id_date_regex: If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence dates from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequenceIdAgeRegex: If not C{None}, gives a C{str} regular
+    @param sequence_id_age_regex: If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence ages from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequenceIdRegexMustMatch: If C{True} it will be considered an error
+    @param sequence_id_regex_must_match: If C{True} it will be considered an error
         if a sequence id does not match the regular expression given by
-        C{sequenceIdDateRegex} or C{sequenceIdAgeRegex}.
+        C{sequence_id_date_regex} or C{sequence_id_age_regex}.
     """
 ```
 

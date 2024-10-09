@@ -15,11 +15,11 @@ parser = argparse.ArgumentParser(
     ),
 )
 
-# A mutually exclusive group for either --clockModel or --templateFile.
+# A mutually exclusive group for either --clock_model or --template_file.
 group = parser.add_mutually_exclusive_group()
 
 group.add_argument(
-    "--clockModel",
+    "--clock_model",
     metavar="MODEL",
     default="strict",
     choices=("random-local", "relaxed-exponential", "relaxed-lognormal", "strict"),
@@ -31,11 +31,11 @@ group.add_argument(
 )
 
 group.add_argument(
-    "--templateFile", metavar="FILENAME", help="The XML template file to use."
+    "--template_file", metavar="FILENAME", help="The XML template file to use."
 )
 
 parser.add_argument(
-    "--chainLength", type=int, metavar="LENGTH", help="The MCMC chain length."
+    "--chain_length", type=int, metavar="LENGTH", help="The MCMC chain length."
 )
 
 parser.add_argument(
@@ -52,7 +52,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--defaultAge",
+    "--default_age",
     type=float,
     default=0.0,
     metavar="N",
@@ -63,7 +63,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--dateUnit",
+    "--date_unit",
     metavar="UNIT",
     choices=("day", "month", "year"),
     default="year",
@@ -71,7 +71,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--dateDirection",
+    "--date_direction",
     metavar="DIRECTION",
     choices=("backward", "forward"),
     default="backward",
@@ -83,7 +83,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--logFileBasename",
+    "--log_file_basename",
     default="beast-output",
     metavar="BASE-FILENAME",
     help=(
@@ -93,7 +93,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--traceLogEvery",
+    "--trace_log_every",
     type=int,
     default=2000,
     metavar="N",
@@ -101,7 +101,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--treeLogEvery",
+    "--tree_log_every",
     type=int,
     default=2000,
     metavar="N",
@@ -109,7 +109,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--screenLogEvery",
+    "--screen_log_every",
     type=int,
     default=2000,
     metavar="N",
@@ -117,7 +117,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--mimicBEAUti",
+    "--mimic_beauti",
     action="store_true",
     help=(
         "If specified, add attributes to the <beast> tag that mimic what "
@@ -126,7 +126,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--sequenceIdDateRegex",
+    "--sequence_id_date_regex",
     metavar="REGEX",
     help=(
         "A regular expression that will be used to capture sequence dates "
@@ -135,13 +135,13 @@ parser.add_argument(
         "matching is anchored to the start of the id string (i.e., "
         "Python's re.match function is used, not the re.search function), "
         "so you must explicitly match the id from its beginning. For "
-        "example, you might use --sequenceIdDateRegex "
+        "example, you might use --sequence_id_date_regex "
         r"'^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'."
     ),
 )
 
 parser.add_argument(
-    "--sequenceIdAgeRegex",
+    "--sequence_id_age_regex",
     metavar="REGEX",
     help=(
         "A regular expression that will be used to capture sequence ages "
@@ -150,22 +150,22 @@ parser.add_argument(
         "start of the id string (i.e., Python's re.match function is used, "
         "not the re.search function), so you must explicitly match the id "
         "from its beginning. For example, you might use "
-        r"--sequenceIdAgeRegex '^.*_(\d+)$' to capture an age preceded by "
+        r"--sequence_id_age_regex '^.*_(\d+)$' to capture an age preceded by "
         "an underscore at the very end of the sequence id. If "
-        "--sequenceIdDateRegex is also given, it takes precedence when "
+        "--sequence_id_date_regex is also given, it takes precedence when "
         "matching sequence ids."
     ),
 )
 
 parser.add_argument(
-    # Note that --sequenceIdDateRegexMayNotMatch is maintained here for
+    # Note that --sequence_id_date_regexMayNotMatch is maintained here for
     # backwards compatibility.
     "--sequenceIdRegexMayNotMatch",
-    "--sequenceIdDateRegexMayNotMatch",
+    "--sequence_id_date_regexMayNotMatch",
     action="store_false",
-    dest="sequenceIdRegexMustMatch",
+    dest="sequence_id_regex_must_match",
     help=(
-        "If specified (and --sequenceIdDateRegex or --sequenceIdAgeRegex is "
+        "If specified (and --sequence_id_date_regex or --sequence_id_age_regex is "
         "given) it will not be considered an error if a sequence id does "
         "not match the given regular expression. In that case, sequences "
         "will be assigned an age of zero unless one is given via --age."
@@ -177,12 +177,12 @@ args = parser.parse_args()
 reads = parseFASTACommandLineOptions(args)
 
 xml = BEAST2XML(
-    template=args.templateFile,
-    clockModel=args.clockModel,
-    sequenceIdDateRegex=args.sequenceIdDateRegex,
-    sequenceIdAgeRegex=args.sequenceIdAgeRegex,
-    sequenceIdRegexMustMatch=args.sequenceIdRegexMustMatch,
-    dateUnit=args.dateUnit,
+    template=args.template_file,
+    clock_model=args.clock_model,
+    sequence_id_date_regex=args.sequence_id_date_regex,
+    sequence_id_age_regex=args.sequence_id_age_regex,
+    sequence_id_regex_must_match=args.sequence_id_regex_must_match,
+    date_unit=args.date_unit,
 )
 
 xml.add_sequences(reads)
@@ -203,13 +203,13 @@ if args.age:
 
 print(
     xml.to_string(
-        chainLength=args.chainLength,
-        defaultAge=args.defaultAge,
-        dateDirection=args.dateDirection,
-        logFileBasename=args.logFileBasename,
-        traceLogEvery=args.traceLogEvery,
-        treeLogEvery=args.treeLogEvery,
-        screenLogEvery=args.screenLogEvery,
-        mimicBEAUti=args.mimicBEAUti,
+        chain_length=args.chain_length,
+        default_age=args.default_age,
+        date_direction=args.date_direction,
+        log_file_basename=args.log_file_basename,
+        trace_log_every=args.trace_log_every,
+        tree_log_every=args.trace_log_every,
+        screen_log_every=args.screen_log_every,
+        mimic_beauti=mimic_beauti,
     ).replace('" /><sequence', '" />\n    <sequence')
 )

@@ -17,60 +17,68 @@ from copy import deepcopy
 
 class BEAST2XML(object):
     """
-    Create BEAST2 XML.
+    Create BEAST2 XML instance.
 
-    @param template: A C{str} filename or an open file pointer to read the
+    Parameters
+    ----------
+    template: str, default=None
+        A filename or an open file pointer to read the
         XML template from. If C{None}, a template based on C{clockModel}
         will be used.
-    @param clockModel: A C{str} specifying the clock model. Possible values
+    clock_model: str, default="strict"
+        Clock model to be used. Possible values
         are 'random-local', 'relaxed-exponential', 'relaxed-lognormal',
         and 'strict.
-    @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
+    sequence_id_date_regex: str, default=None
+        If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence dates from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequenceIdAgeRegex: If not C{None}, gives a C{str} regular
+    sequence_id_age_regex: str, default=None
+        If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence ages from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequenceIdRegexMustMatch: If C{True} it will be considered an error
+    sequence_id_regex_must_match: bool, default=True
+        If C{True} it will be considered an error
         if a sequence id does not match the regular expression given by
-        C{sequenceIdDateRegex} or C{sequenceIdAgeRegex}.
-    @param dateUnit: A C{str}, either 'day', 'month', or 'year' indicating the
+        C{sequenceIdDateRegex} or C{sequenceId_age_regex}.
+    date_unit: str, default="year"
+        A C{str}, either 'day', 'month', or 'year' indicating the
         date time unit.
-    """
 
+    """
     TRACELOG_SUFFIX = ".log"
     TREELOG_SUFFIX = ".trees"
 
     def __init__(
             self,
             template=None,
-            clockModel="strict",
-            sequenceIdDateRegex=None,
-            sequenceIdAgeRegex=None,
-            sequenceIdRegexMustMatch=True,
-            dateUnit="year",
+            clock_model="strict",
+            sequence_id_date_regex=None,
+            sequence_id_age_regex=None,
+            sequence_id_regex_must_match=True,
+            date_unit="year",
     ):
         if template is None:
             self._tree = ET.parse(
-                files("beast2xml").joinpath(f"templates/{clockModel}.xml")
+                files("beast2xml").joinpath(f"templates/{clock_model}.xml")
             )
         else:
             self._tree = ET.parse(template)
-        if sequenceIdDateRegex is None:
-            self._sequenceIdDateRegex = None
+        if sequence_id_date_regex is None:
+            self._sequenceId_date_regex = None
         else:
-            self._sequenceIdDateRegex = re.compile(sequenceIdDateRegex)
+            self._sequenceId_date_regex = re.compile(sequence_id_date_regex)
 
-        if sequenceIdAgeRegex is None:
-            self._sequenceIdAgeRegex = None
+        if sequence_id_age_regex is None:
+            self._sequenceId_age_regex = None
         else:
-            self._sequenceIdAgeRegex = re.compile(sequenceIdAgeRegex)
+            self._sequenceId_age_regex = re.compile(sequence_id_age_regex)
 
-        self._sequenceIdRegexMustMatch = sequenceIdRegexMustMatch
+        self._sequence_id_regex_must_match = sequence_id_regex_must_match
         self._sequences = Reads()
-        self._ageByFullId = {}
-        self._ageByShortId = {}
-        self._dateUnit = dateUnit
+        self._age_by_full_id = {}
+        self._age_by_short_id = {}
+        self._date_unit = date_unit
 
     @staticmethod
     def find_elements(tree):
@@ -78,10 +86,17 @@ class BEAST2XML(object):
         Check that an XML tree has the required structure and return the found
         elements.
 
-        @param tree: An C{ET.ElementTree} instance.
-        @raise ValueError: If any required element cannot be found.
-        @return: A C{dict} keyed by C{str} element paths with C{ET.Element}
-            instances as values.
+        Parameters
+        ----------
+        tree : xml.etree.ElementTree.Element
+
+
+        Returns
+        -------
+        result: dict {str:xml.etree.ElementTree.Element}
+            A dictionary where the keys are the element names and the values are the
+            corresponding elements.
+
         """
         result = {}
         root = tree.getroot()
@@ -103,6 +118,16 @@ class BEAST2XML(object):
         return result
 
     def add_ages(self, age_data, seperator='\t'):
+        """
+        Add age data.
+
+        Parameters
+        ----------
+        age_data: str
+            Path to seperated value file.
+        seperator: str
+            Seperator to use to separate age data.
+        """
         if isinstance(age_data, str):
             age_data = pd.read_csv(age_data, sep=seperator)
         if isinstance(age_data, pd.DataFrame):
@@ -119,32 +144,43 @@ class BEAST2XML(object):
             age_data = age_data.to_dict()
         if not isinstance(age_data, dict):
             raise ValueError('age_data must be a C{dict} a C{pd.DataFrame}, a C{pd.Series} or a path to tsv/csv.')
-        self._ageByFullId.update(age_data)
+        self._age_by_full_id.update(age_data)
         age_data = {key.split()[0]: value for key, value in age_data.items()}
-        self._ageByShortId.update(age_data)
+        self._age_by_short_id.update(age_data)
 
-    def add_age(self, sequenceId, age):
+    def add_age(self, sequence_id, age):
         """
         Specify the age of a sequence.
 
-        @param sequenceId: The C{str} name of a sequence id. An age will be
+        Parameters
+        ----------
+        sequence_id : str
+            The name of a sequence id. An age will be
             recorded for both the full id and for the part of it up to its
             first space. This makes it convenient for giving sequence ids from
             the command line (e.g., using ../bin/beast2-xml.py) without having
             to specify the full id. On id lookup (when creating XML), full ids
             always have precedence so there is no danger of short id
             duplication error if full ids are always used.
-        @param age: The C{float} age of the sequence.
+        age : float or int
+        The age of a sequence.
         """
-        self._ageByShortId[sequenceId.split()[0]] = age
-        self._ageByFullId[sequenceId] = age
+        self._age_by_short_id[sequence_id.split()[0]] = age
+        self._age_by_full_id[sequence_id] = age
 
     def add_sequence(self, sequence, age=None):
         """
-        Add a sequence (optionally with an age) to the run.
 
-        @param sequence: A C{dark.read} instance.
-        @param age: If not C{None}, the C{float} age of the sequence.
+        Parameters
+        ----------
+        sequence : dark.read
+            Sequence to be added.
+        age : str, default=None
+            If not C{None}, the C{float} age of the sequence.
+
+        Returns
+        -------
+
         """
         self._sequences.add(sequence)
 
@@ -154,11 +190,11 @@ class BEAST2XML(object):
 
         age = None
 
-        if self._sequenceIdDateRegex:
-            match = self._sequenceIdDateRegex.match(sequence.id)
+        if self._sequenceId_date_regex:
+            match = self._sequenceId_date_regex.match(sequence.id)
             if match:
                 try:
-                    sequenceDate = date(
+                    sequence_date = date(
                         *map(
                             int,
                             (
@@ -171,17 +207,17 @@ class BEAST2XML(object):
                 except IndexError:
                     pass
                 else:
-                    days = (date.today() - sequenceDate).days
-                    if self._dateUnit == "year":
+                    days = (date.today() - sequence_date).days
+                    if self._date_unit == "year":
                         age = days / 365.25
-                    elif self._dateUnit == "month":
+                    elif self._date_unit == "month":
                         age = days / (365.25 / 12)
                     else:
-                        assert self._dateUnit == "day"
+                        assert self._date_unit == "day"
                         age = days
 
-        if age is None and self._sequenceIdAgeRegex:
-            match = self._sequenceIdAgeRegex.match(sequence.id)
+        if age is None and self._sequenceId_age_regex:
+            match = self._sequenceId_age_regex.match(sequence.id)
             if match:
                 try:
                     age = match.group(1)
@@ -189,8 +225,8 @@ class BEAST2XML(object):
                     pass
 
         if age is None:
-            if self._sequenceIdRegexMustMatch and (
-                    self._sequenceIdDateRegex or self._sequenceIdAgeRegex
+            if self._sequence_id_regex_must_match and (
+                    self._sequenceId_date_regex or self._sequenceId_age_regex
             ):
                 raise ValueError(
                     "No sequence date or age could be found in %r "
@@ -203,48 +239,61 @@ class BEAST2XML(object):
         """
         Add a set of sequences to the run.
 
-        @param sequences: An iterable of C{dark.read} instances.
+        Parameters
+        ----------
+        sequences : iterable of dark.read instances
+            The sequences to be added.
+
         """
         for sequence in sequences:
             self.add_sequence(sequence)
 
-    def _to_xml_tree(self, chainLength=None, defaultAge=None,
-                     dateDirection=None, logFileBasename=None,
-                     traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-                     transformFunc=None, mimicBEAUti=False):
+    def _to_xml_tree(self, chain_length=None, default_age=None,
+                     date_direction=None, log_file_basename=None,
+                     trace_log_every=None, tree_log_every=None, screen_log_every=None,
+                     transform_func=None, mimic_beauti=False):
         """
-        @param chainLength: The C{int} length of the MCMC chain. If C{None},
-            the value in the template will be retained.
-        @param defaultAge: If None and no age has been supplied for a sequence an error is thrown. Ages can be supplied
-            addAge or add_ages methods. If a float or int is provided this value will be used if a sequences age has not
-            been provided.
-        @param dateDirection: A C{str}, either 'backward', 'forward' or "date"
-            indicating whether dates are back in time from the present or
-            forward in time from some point in the past.
-        @param logFileBasename: The C{str} The base filename to write logs to.
-            A .log or .trees suffix will be appended to this to make the
-            actual log file names.  If C{None}, the log file names in the
+        Generate xml.etree.ElementTree for running on BEAST.
+
+        Parameters
+        ----------
+        chain_length : int, default=None
+            The length of the MCMC chain. If C{None}, the value in the template will
+             be retained.
+        default_age : float or int, default=None
+            If None and no age has been supplied for a sequence an error is thrown.
+            Ages can be supplied add_age or add_ages methods. If a float or int is
+            provided this value will be used if a sequences age has not been provided.
+        date_direction : str, default=None
+            A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
+             back in time from the present or forward in time from some point in the
+              past.
+        log_file_basename : str, default=None
+            The base filename to write logs to. A .log or .trees suffix will be appended
+            to this to make the actual log file names.  If None, the log file names in
+            the template will be retained.
+        trace_log_every : int, default=None
+            Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
-        @param traceLogEvery: An C{int} specifying how often to write to the
-            trace log file. If C{None}, the value in the template will be
-            retained.
-        @param treeLogEvery: An C{int} specifying how often to write to the
-            tree log file. If C{None}, the value in the template will be
-            retained.
-        @param screenLogEvery: An C{int} specifying how often to write to the
-            terminal (screen) log. If C{None}, the value in the template will
-            be retained.
-        @param transformFunc: If not C{None} A callable that will be passed
-            the C{ElementTree} instance and which must return an C{ElementTree}
-            instance.
-        @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
-            in the way that BEAUti does, to allow BEAUti to load the XML we
-            produce.
-        @raise ValueError: If any required tree elements cannot be found
-            (raised by our call to self.findElements).
-        @return: C{str} Element tree.
+        tree_log_every : int, default=None
+            Specifying how often to write to the tree log file. If None, the value in the
+            template will be retained.
+        screen_log_every : int, default=None
+            Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        transform_func : callable, default=None
+            A callable that will be passed the C{ElementTree} instance and which
+            must return an C{ElementTree} instance.
+        mimic_beauti : bool, default=False
+            If True, add attributes to the <beast> tag in the way that BEAUti does, to
+            allow BEAUti to load the XML we produce.
+
+        Returns
+        -------
+        tree: xml.etree.ElementTree
+            ElementTree for running on BEAST
         """
-        if mimicBEAUti:
+        if mimic_beauti:
             root = self._tree.getroot()
             root.set("beautitemplate", "Standard")
             root.set("beautistatus", "")
@@ -261,166 +310,188 @@ class BEAST2XML(object):
 
         trait = elements['./run/state/tree/trait']
 
-        if defaultAge is not None:
-            if not isinstance(defaultAge, (float, int)):
+        if default_age is not None:
+            if not isinstance(default_age, (float, int)):
                 raise TypeError('The default age must be an integer or float.')
 
-        age_by_short_id = deepcopy(self._ageByShortId)
+        age_by_short_id = deepcopy(self._age_by_short_id)
         # Add in all sequences.
         for sequence in sorted(self._sequences):  # Sorting adds the sequences alphabetically like in BEAUti.
-            id = sequence.id
-            short_id = id.split()[0]
-            if id not in self._ageByFullId:
-                if defaultAge is None:
-                    AssertionError('No age has been provided for ' + id +
+            seq_id = sequence.id
+            short_id = seq_id.split()[0]
+            if seq_id not in self._age_by_full_id:
+                if default_age is None:
+                    AssertionError('No age has been provided for ' + seq_id +
                                    '. Ages can be provided via the addAge or add_ages method.' +
-                                   'Alternatively a defaultAge can be supplied in this methods arguments.')
-                age_by_short_id[short_id] = defaultAge
+                                   'Alternatively a default_age can be supplied in this methods arguments.')
+                age_by_short_id[short_id] = default_age
 
             ET.SubElement(data, 'sequence', id='seq_' + short_id, spec="Sequence", taxon=short_id,
                           totalcount='4', value=sequence.sequence)
 
         trait_order = [sequence.id.split()[0] for sequence in self._sequences]  # ensures order is the same as BEAUti's.
         trait_text = [short_id + '=' + str(age_by_short_id[short_id]) for short_id in trait_order]
-        if dateDirection is None:
+        if date_direction is None:
             trait.set('value', ','.join(trait_text))  # Replaces old age info with new age info
             if trait.get("traitname") is None:
-                raise ValueError('No traitname attibute in dateTrait element of template xml.'+
-                                 ' Alternatively, his can be set through dateDirection argument.')
+                raise ValueError('No traitname attribute in dateTrait element of template xml.' +
+                                 ' This can be set through date_direction argument with the options ' +
+                                 '"backward", "forward" or "date".')
         else:
-            if dateDirection not in ['backward', 'forward', 'date']:
-                raise ValueError('If supplied dateDirection must be either "backward", "forward" or "date".')
+            if date_direction not in ['backward', 'forward', 'date']:
+                raise ValueError('If supplied date_direction must be either "backward", "forward" or "date".')
             trait.set('value', '')  # Removes old age info
             trait.text = ',\n'.join(trait_text) + '\n'  # Adds new age info
-            if dateDirection == 'date':
-                trait.set("traitname", dateDirection)
+            if date_direction == 'date':
+                trait.set("traitname", date_direction)
             else:
-                trait.set("traitname", "date-" + dateDirection)
+                trait.set("traitname", "date-" + date_direction)
 
         # Set the date unit (if not 'year').
-        if self._dateUnit != "year":
-            trait.set("units", self._dateUnit)
+        if self._date_unit != "year":
+            trait.set("units", self._date_unit)
 
-        if chainLength is not None:
-            elements["run"].set("chainLength", str(chainLength))
+        if chain_length is not None:
+            elements["run"].set("chain_length", str(chain_length))
 
-        if logFileBasename is not None:
+        if log_file_basename is not None:
             # Trace log.
             logger = elements["./run/logger[@id='tracelog']"]
-            logger.set("fileName", logFileBasename + self.TRACELOG_SUFFIX)
+            logger.set("fileName", log_file_basename + self.TRACELOG_SUFFIX)
             # Tree log.
             logger = elements[tree_logger_key]
-            logger.set('fileName', logFileBasename + self.TREELOG_SUFFIX)
+            logger.set('fileName', log_file_basename + self.TREELOG_SUFFIX)
 
-        if traceLogEvery is not None:
+        if trace_log_every is not None:
             logger = elements["./run/logger[@id='tracelog']"]
-            logger.set("logEvery", str(traceLogEvery))
+            logger.set("logEvery", str(trace_log_every))
 
-        if treeLogEvery is not None:
+        if tree_log_every is not None:
             logger = elements[tree_logger_key]
-            logger.set('logEvery', str(treeLogEvery))
+            logger.set('logEvery', str(tree_log_every))
 
-        if screenLogEvery is not None:
+        if screen_log_every is not None:
             logger = elements["./run/logger[@id='screenlog']"]
-            logger.set("logEvery", str(screenLogEvery))
+            logger.set("logEvery", str(screen_log_every))
 
-        tree = self._tree if transformFunc is None else transformFunc(self._tree)
+        tree = self._tree if transform_func is None else transform_func(self._tree)
 
         return tree
 
-    def to_string(self, chainLength=None, defaultAge=None,
-                  dateDirection=None, logFileBasename=None,
-                  traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-                  transformFunc=None, mimicBEAUti=False):
+    def to_string(self, chain_length=None, default_age=None,
+                  date_direction=None, log_file_basename=None,
+                  trace_log_every=None, tree_log_every=None, screen_log_every=None,
+                  transform_func=None, mimic_beauti=False):
         """
-        @param chainLength: The C{int} length of the MCMC chain. If C{None},
-            the value in the template will be retained.
-        @param defaultAge: If None and no age has been supplied for a sequence an error is thrown. Ages can be supplied
-            addAge or add_ages method. If a float or int is provided this value will be used if a sequences age has not
-            been provided.
-        @param dateDirection: A C{str}, either 'backward', 'forward' or "date"
-            indicating whether dates are back in time from the present or
-            forward in time from some point in the past.
-        @param logFileBasename: The C{str} The base filename to write logs to.
-            A .log or .trees suffix will be appended to this to make the
-            actual log file names.  If C{None}, the log file names in the
+        Generate str version of xml.etree.ElementTree for running on BEAST.
+
+        Parameters
+        ----------
+        chain_length : int, default=None
+            The length of the MCMC chain. If C{None}, the value in the template will
+             be retained.
+        default_age : float or int, default=None
+            If None and no age has been supplied for a sequence an error is thrown.
+            Ages can be supplied add_age or add_ages methods. If a float or int is
+            provided this value will be used if a sequences age has not been provided.
+        date_direction : str, default=None
+            A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
+             back in time from the present or forward in time from some point in the
+              past.
+        log_file_basename : str, default=None
+            The base filename to write logs to. A .log or .trees suffix will be appended
+            to this to make the actual log file names.  If None, the log file names in
+            the template will be retained.
+        trace_log_every : int, default=None
+            Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
-        @param traceLogEvery: An C{int} specifying how often to write to the
-            trace log file. If C{None}, the value in the template will be
-            retained.
-        @param treeLogEvery: An C{int} specifying how often to write to the
-            tree log file. If C{None}, the value in the template will be
-            retained.
-        @param screenLogEvery: An C{int} specifying how often to write to the
-            terminal (screen) log. If C{None}, the value in the template will
-            be retained.
-        @param transformFunc: If not C{None} A callable that will be passed
-            the C{ElementTree} instance and which must return an C{ElementTree}
-            instance.
-        @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
-            in the way that BEAUti does, to allow BEAUti to load the XML we
-            produce.
-        @raise ValueError: If any required tree elements cannot be found
-            (raised by our call to self.findElements).
-        @return: C{str} representation of XML.
+        tree_log_every : int, default=None
+            Specifying how often to write to the tree log file. If None, the value in the
+            template will be retained.
+        screen_log_every : int, default=None
+            Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        transform_func : callable, default=None
+            A callable that will be passed the C{ElementTree} instance and which
+            must return an C{ElementTree} instance.
+        mimic_beauti : bool, default=False
+            If True, add attributes to the <beast> tag in the way that BEAUti does, to
+            allow BEAUti to load the XML we produce.
+
+        Returns
+        -------
+        tree: str
+            String representation of xml.etree.ElementTree for running on BEAST
         """
-        tree = self._to_xml_tree(chainLength=chainLength, defaultAge=defaultAge,
-                                 dateDirection=dateDirection, logFileBasename=logFileBasename,
-                                 traceLogEvery=traceLogEvery, treeLogEvery=treeLogEvery, screenLogEvery=screenLogEvery,
-                                 transformFunc=transformFunc, mimicBEAUti=mimicBEAUti)
+        tree = self._to_xml_tree(chain_length=chain_length, default_age=default_age,
+                                 date_direction=date_direction, log_file_basename=log_file_basename,
+                                 trace_log_every=trace_log_every, tree_log_every=tree_log_every,
+                                 screen_log_every=screen_log_every,
+                                 transform_func=transform_func, mimic_beauti=mimic_beauti)
 
         stream = six.StringIO()
         tree.write(stream, "unicode" if six.PY3 else "utf-8", xml_declaration=True)
         return stream.getvalue()
 
-    def to_xml(self, path, chainLength=None, defaultAge=None,
-               dateDirection=None, logFileBasename=None,
-               traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-               transformFunc=None, mimicBEAUti=False):
+    def to_xml(self, path, chain_length=None, default_age=None,
+               date_direction=None, log_file_basename=None,
+               trace_log_every=None, tree_log_every=None, screen_log_every=None,
+               transform_func=None, mimic_beauti=False):
         """
-        @param path: The C{str} filename to write the XML to.
-        @param chainLength: The C{int} length of the MCMC chain. If C{None},
-            the value in the template will be retained.
-        @param defaultAge: If None and no age has been supplied for a sequence an error is thrown. Ages can be supplied
-            addAge or add_ages method. If a float or int is provided this value will be used if a sequences age has not
-            been provided.
-        @param dateDirection: A C{str}, either 'backward', 'forward' or "date"
-            indicating whether dates are back in time from the present or
-            forward in time from some point in the past.
-        @param logFileBasename: The C{str} The base filename to write logs to.
-            A .log or .trees suffix will be appended to this to make the
-            actual log file names.  If C{None}, the log file names in the
+        Generate xml.etree.ElementTree for running on BEAST and write to xml file.
+
+        Parameters
+        ----------
+        chain_length : int, default=None
+            The length of the MCMC chain. If C{None}, the value in the template will
+             be retained.
+        default_age : float or int, default=None
+            If None and no age has been supplied for a sequence an error is thrown.
+            Ages can be supplied add_age or add_ages methods. If a float or int is
+            provided this value will be used if a sequences age has not been provided.
+        date_direction : str, default=None
+            A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
+             back in time from the present or forward in time from some point in the
+              past.
+        log_file_basename : str, default=None
+            The base filename to write logs to. A .log or .trees suffix will be appended
+            to this to make the actual log file names.  If None, the log file names in
+            the template will be retained.
+        trace_log_every : int, default=None
+            Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
-        @param traceLogEvery: An C{int} specifying how often to write to the
-            trace log file. If C{None}, the value in the template will be
-            retained.
-        @param treeLogEvery: An C{int} specifying how often to write to the
-            tree log file. If C{None}, the value in the template will be
-            retained.
-        @param screenLogEvery: An C{int} specifying how often to write to the
-            terminal (screen) log. If C{None}, the value in the template will
-            be retained.
-        @param transformFunc: If not C{None} A callable that will be passed
-            the C{ElementTree} instance and which must return an C{ElementTree}
-            instance.
-        @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
-            in the way that BEAUti does, to allow BEAUti to load the XML we
-            produce.
-        @raise ValueError: If any required tree elements cannot be found
-            (raised by our call to self.findElements).
-        @return: None.
+        tree_log_every : int, default=None
+            Specifying how often to write to the tree log file. If None, the value in the
+            template will be retained.
+        screen_log_every : int, default=None
+            Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        transform_func : callable, default=None
+            A callable that will be passed the C{ElementTree} instance and which
+            must return an C{ElementTree} instance.
+        mimic_beauti : bool, default=False
+            If True, add attributes to the <beast> tag in the way that BEAUti does, to
+            allow BEAUti to load the XML we produce.
+
         """
         if not isinstance(path, str):
             raise TypeError('filename must be a string.')
-        tree = self._to_xml_tree(chainLength=chainLength, defaultAge=defaultAge,
-                                 dateDirection=dateDirection, logFileBasename=logFileBasename,
-                                 traceLogEvery=traceLogEvery, treeLogEvery=treeLogEvery, screenLogEvery=screenLogEvery,
-                                 transformFunc=transformFunc, mimicBEAUti=mimicBEAUti)
+        tree = self._to_xml_tree(chain_length=chain_length, default_age=default_age,
+                                 date_direction=date_direction, log_file_basename=log_file_basename,
+                                 trace_log_every=trace_log_every, tree_log_every=tree_log_every,
+                                 screen_log_every=screen_log_every,
+                                 transform_func=transform_func, mimic_beauti=mimic_beauti)
         tree.write(path, 'unicode' if six.PY3 else 'utf-8', xml_declaration=True)
 
-    def change_parameter_state_node(self, parameter, value=None, dimension=None, lower=None, upper=None, wild_card_ending=True):
-        """ Change the values of the stateNode for a parameter.
-
+    def change_parameter_state_node(self,
+                                    parameter,
+                                    value=None,
+                                    dimension=None,
+                                    lower=None,
+                                    upper=None,
+                                    wild_card_ending=True):
+        """
+        Change the values of the stateNode for a parameter.
 
         Parameters
         ----------
@@ -436,7 +507,6 @@ class BEAST2XML(object):
             The upper bound of the parameter.
         wild_card_ending: bool (default True)
             If true parameters starting with parameter will be searched for.
-
 
         """
         if all(arg is None for arg in [value, dimension, lower, upper]):
