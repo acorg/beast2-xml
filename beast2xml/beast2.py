@@ -3,12 +3,12 @@ from __future__ import print_function, division
 import re
 import six
 from datetime import date
+from beast2xml.date_utilities import date_to_decimal
 import xml.etree.ElementTree as ET
+import xml
 
-try:
-    from importlib.resources import files
-except ImportError:
-    from importlib_resources import files
+from importlib.resources import files
+
 
 from dark.reads import Reads
 import pandas as pd
@@ -48,6 +48,11 @@ class BEAST2XML(object):
     """
     TRACELOG_SUFFIX = ".log"
     TREELOG_SUFFIX = ".trees"
+    _rate_change_to_param_dict = {
+        'birthRateChangeTimes': 'reproductiveNumber',
+        'deathRateChangeTimes': 'becomeUninfectiousRate',
+        'samplingRateChangeTimes': 'samplingProportion'
+    }
 
     def __init__(
             self,
@@ -375,7 +380,7 @@ class BEAST2XML(object):
             logger.set("logEvery", str(screen_log_every))
 
         tree = self._tree if transform_func is None else transform_func(self._tree)
-
+        ET.indent(tree, '\t')
         return tree
 
     def to_string(self, chain_length=None, default_age=None,
@@ -506,7 +511,7 @@ class BEAST2XML(object):
         upper: int, float or str
             The upper bound of the parameter.
         wild_card_ending: bool (default True)
-            If true parameters starting with parameter will be searched for.
+            If true parameter starting with parameter will be searched for.
 
         """
         if all(arg is None for arg in [value, dimension, lower, upper]):
@@ -533,6 +538,91 @@ class BEAST2XML(object):
             parameter_node.set('lower', str(lower))
         if upper is not None:
             parameter_node.set('upper', str(upper))
+
+    def add_rate_change_dates(self, parameter, dates, youngest_tip):
+        """
+        Add specific dates for parameter changes in skyline models.
+
+        Parameters
+        ----------
+        parameter : str
+            The name of the parameter.
+        dates : list, tuple, pd.Series or pd.DatetimeIndex of dates
+        youngest_tip   : datetime.datetime
+            Date of youngest tip/sample.
+
+        """
+        if not isinstance(dates, (list, tuple, pd.Series, pd.DatetimeIndex)):
+            raise TypeError('dates must be a list, tuple pandas.Series or pandas.DatetimeIndex.')
+        year_decimals = [date_to_decimal(date) for date in dates]
+        youngest_tip = date_to_decimal(youngest_tip)
+        times = [youngest_tip - year_decimal for year_decimal in year_decimals]
+        self.add_rate_change_times(parameter, times)
+
+    def add_rate_change_times(self, parameter, times):
+        """
+        Add specific times for parameter changes in skyline models.
+
+        Parameters
+        ----------
+        parameter : str
+            The name of the parameter.
+        times : iterable of floats
+            Times of changes.
+
+        """
+        skyline_element = self._tree.find("./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']")
+        if skyline_element is None:
+            raise ValueError(
+                'No distribution of spec BirthDeathSkylineModel was found.' +
+                'Currently this method only supports Birth Death Skyline Models.'
+            )
+        rev_time_element = skyline_element.find('reverseTimeArrays')
+        if rev_time_element is None:
+            rev_time_array = [False, False, False, False, False]
+        else:
+            rev_time_array = rev_time_element.text
+            rev_time_array = rev_time_array.split(' ')
+            rev_time_array = [val in ['true', 'True', 'TRUE'] for val in rev_time_array]
+            del rev_time_element  # Delete existing rev_time_element.
+        if parameter == "birthRateChangeTimes":
+            rev_time_array[0] = True
+        elif parameter == "deathRateChangeTimes":
+            rev_time_array[1] = True
+        elif parameter == "samplingRateChangeTimes":
+            rev_time_array[2] = True
+        else:
+            raise ValueError(
+                'Currently this method only supports parameter being: ' +
+                'birthRateChangeTimes (for changes in reproductive number), '
+                'deathRateChangeTimes (for changes in uninfectious rate) and ' +
+                'samplingRateChangeTimes (for sampling proportion).'
+            )
+        rev_time_array = [str(val).lower() for val in rev_time_array]
+        rev_time_array  = ' '.join(rev_time_array)
+        ET.SubElement(skyline_element,
+                      'reverseTimeArrays',
+                      spec="beast.core.parameter.BooleanParameter",
+                      value= rev_time_array)
+        parameter_element = skyline_element.find(parameter)
+        if parameter_element is not None:
+            del parameter_element # delete old parameter element if it exists.
+        if not any(time== 0.0 for time in times):
+            times.append(0.0)
+        dimensions = len(times)
+        ET.SubElement(skyline_element,
+                      parameter,
+                      spec="parameter.RealParameter",
+                      value=' '.join([str(time) for time in times]))
+        self.change_parameter_state_node(
+            self._rate_change_to_param_dict[parameter],
+            dimension=dimensions)
+
+
+
+
+
+
 
 
 
