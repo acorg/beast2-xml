@@ -14,6 +14,18 @@ from dark.reads import Reads
 import pandas as pd
 from copy import deepcopy
 
+def delete_child_nodes(node):
+    """
+    Delete any existing children of xml node.
+
+    Parameters
+    ----------
+    node: xml.etree.ElementTree.Element
+
+    """
+    # Delete any existing children of xml node.
+    for child in list(node):
+        node.remove(child)
 
 class BEAST2XML(object):
     """
@@ -52,6 +64,9 @@ class BEAST2XML(object):
         'birthRateChangeTimes': 'reproductiveNumber',
         'deathRateChangeTimes': 'becomeUninfectiousRate',
         'samplingRateChangeTimes': 'samplingProportion'
+    }
+    _distribution_args = {
+        'Uniform':  ['lower', 'upper']
     }
 
     def __init__(
@@ -99,7 +114,7 @@ class BEAST2XML(object):
         Returns
         -------
         result: dict {str:xml.etree.ElementTree.Element}
-            A dictionary where the keys are the element names and the values are the
+            A dictionary where the keys are the element_path names and the values are the
             corresponding elements.
 
         """
@@ -305,13 +320,12 @@ class BEAST2XML(object):
 
         elements = self.find_elements(self._tree)
 
-        # Get data element
+        # Get data element_path
         data = elements['data']
         data_id = data.get('id')
         tree_logger_key = "./run/logger[@id='treelog.t:" + data_id + "']"
         # Delete any existing children of the data node.
-        for child in list(data):
-            data.remove(child)
+        delete_child_nodes(data)
 
         trait = elements['./run/state/tree/trait']
 
@@ -339,7 +353,7 @@ class BEAST2XML(object):
         if date_direction is None:
             trait.set('value', ','.join(trait_text))  # Replaces old age info with new age info
             if trait.get("traitname") is None:
-                raise ValueError('No traitname attribute in dateTrait element of template xml.' +
+                raise ValueError('No traitname attribute in dateTrait element_path of template xml.' +
                                  ' This can be set through date_direction argument with the options ' +
                                  '"backward", "forward" or "date".')
         else:
@@ -488,6 +502,19 @@ class BEAST2XML(object):
                                  transform_func=transform_func, mimic_beauti=mimic_beauti)
         tree.write(path, 'unicode' if six.PY3 else 'utf-8', xml_declaration=True)
 
+    def _search_for_parameter_in_element(self, element_path, parameter, wild_card_ending):
+        if wild_card_ending:
+            parameter_nodes = [potential_parameter_node
+                               for potential_parameter_node in self._tree.findall(element_path)
+                               if potential_parameter_node.attrib['id'].startswith(parameter)]
+        else:
+            parameter_nodes = self._tree.findall("./run/state/parameter[@id='%s']" % parameter)
+        if len(parameter_nodes) == 0:
+            raise ValueError('No parameter with id %s (or starting with) was found.' % parameter)
+        if len(parameter_nodes) > 1:
+            raise ValueError('More than one parameter with id %s (or starting with) was found.' % parameter)
+        return parameter_nodes[0]
+
     def change_parameter_state_node(self,
                                     parameter,
                                     value=None,
@@ -517,17 +544,7 @@ class BEAST2XML(object):
         if all(arg is None for arg in [value, dimension, lower, upper]):
             raise ValueError('Either a value, dimension, lower or upper argument must be provided.')
 
-        if wild_card_ending:
-            parameter_nodes = [potential_parameter_node
-                               for potential_parameter_node in self._tree.findall("./run/state/parameter")
-                               if potential_parameter_node.attrib['id'].startswith(parameter)]
-        else:
-            parameter_nodes = self._tree.findall("./run/state/parameter[@id='%s']" % parameter)
-        if len(parameter_nodes) == 0:
-            raise ValueError('No parameter with id %s (or starting with) was found.' % parameter)
-        if len(parameter_nodes) > 1:
-            raise ValueError('More than one parameter with id %s (or starting with) was found.' % parameter)
-        parameter_node = parameter_nodes[0]
+        parameter_node = self._search_for_parameter_in_element("./run/state/parameter", parameter, wild_card_ending)
         if value is not None:
             parameter_node.text = str(value)
         if dimension is not None:
@@ -538,6 +555,51 @@ class BEAST2XML(object):
             parameter_node.set('lower', str(lower))
         if upper is not None:
             parameter_node.set('upper', str(upper))
+
+    def change_prior(self, parameter, distribution, wild_card_ending=True, **kwargs):
+        """
+        Change the values of a paramters prior.
+
+        Parameters
+        ----------
+        parameter: str
+            The name of the parameter.
+        distribution: str
+            The name of the distribution.
+        wild_card_ending: bool (default True)
+            If true parameter starting with parameter will be searched for.
+        kwargs: dict
+            Keyword arguments parameterising the distribution.
+
+        """
+        parameter_node = self._search_for_parameter_in_element(
+            "./run/distribution/distribution/prior",
+            parameter,
+            wild_card_ending
+        )
+        if distribution == 'uniform':
+            distribution = 'Uniform'
+        if distribution not in self._distribution_args:
+            raise ValueError(
+                'Currently only the following distributions are supported: ' +
+                ', '.join(self._distribution_args.keys()) + '.'
+            )
+        for key in kwargs:
+            if key not in self._distribution_args[distribution]:
+                raise ValueError(
+                    key +
+                    ' is not a parameter of the ' +
+                    distribution + ' distribution.')
+        for arg in self._distribution_args[distribution]:
+            if arg not in kwargs.keys():
+                raise ValueError('%s has not being given as a kwarg.' % arg)
+
+        delete_child_nodes(parameter_node)
+        id = '_'.join([parameter, distribution])
+        if distribution == 'Uniform':
+            self.change_parameter_state_node(parameter, **kwargs)
+
+        ET.SubElement(parameter_node, distribution, id=id, name="distr", **kwargs)
 
     def add_rate_change_dates(self, parameter, dates, youngest_tip):
         """
@@ -603,10 +665,10 @@ class BEAST2XML(object):
         ET.SubElement(skyline_element,
                       'reverseTimeArrays',
                       spec="beast.core.parameter.BooleanParameter",
-                      value= rev_time_array)
+                      value=rev_time_array)
         parameter_element = skyline_element.find(parameter)
         if parameter_element is not None:
-            del parameter_element # delete old parameter element if it exists.
+            del parameter_element # delete old parameter element_path if it exists.
         if not any(time== 0.0 for time in times):
             times.append(0.0)
         dimensions = len(times)

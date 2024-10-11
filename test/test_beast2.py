@@ -30,7 +30,7 @@ class TestTemplate(TestCase):
         Passing a template that has an XML header but no elements to
         BEAST2XML must raise a syntax error.
         """
-        error = "^no element found: line 1, column 38$"
+        error = "^no element_path found: line 1, column 38$"
         assertRaisesRegex(self, ET.ParseError, error, BEAST2XML, template="filename")
 
     @patch(open_, new_callable=mock_open, read_data="not XML")
