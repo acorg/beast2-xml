@@ -137,7 +137,7 @@ class BEAST2XML(object):
 
         return result
 
-    def add_ages(self, age_data, seperator='\t'):
+    def add_ages(self, age_data, seperator='\t', age_column = 'year_decimal'):
         """
         Add age data.
 
@@ -147,19 +147,20 @@ class BEAST2XML(object):
             Path to seperated value file.
         seperator: str
             Seperator to use to separate age data.
+        age_column: str, default = 'year_decimal'
+           Column name to use for age data.
+
         """
         if isinstance(age_data, str):
             age_data = pd.read_csv(age_data, sep=seperator)
         if isinstance(age_data, pd.DataFrame):
-            if len(age_data.columns) != 2:
-                raise ValueError("age_data columns must have two columns")
             if 'id' in age_data.columns:
                 age_data = age_data.set_index('id')
             elif 'strain' in age_data.columns:
                 age_data = age_data.set_index('strain')
             else:
                 raise ValueError("An age_data column must be id or strain")
-            age_data = age_data.iloc[:, 0]
+            age_data = age_data[age_column]
         if isinstance(age_data, pd.Series):
             age_data = age_data.to_dict()
         if not isinstance(age_data, dict):
@@ -271,6 +272,7 @@ class BEAST2XML(object):
     def _to_xml_tree(self, chain_length=None, default_age=None,
                      date_direction=None, log_file_basename=None,
                      trace_log_every=None, tree_log_every=None, screen_log_every=None,
+                     store_state_every=None,
                      transform_func=None, mimic_beauti=False):
         """
         Generate xml.etree.ElementTree for running on BEAST.
@@ -300,6 +302,9 @@ class BEAST2XML(object):
             template will be retained.
         screen_log_every : int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        store_state_every  : int, default=None
+            Specifying how often to write MCMC state file. If None, the
             value in the template will be retained.
         transform_func : callable, default=None
             A callable that will be passed the C{ElementTree} instance and which
@@ -371,7 +376,10 @@ class BEAST2XML(object):
             trait.set("units", self._date_unit)
 
         if chain_length is not None:
-            elements["run"].set("chain_length", str(chain_length))
+            elements["run"].set("chainLength", str(chain_length))
+
+        if store_state_every is not None:
+            elements["run"].set("storeEvery", str(store_state_every))
 
         if log_file_basename is not None:
             # Trace log.
@@ -400,6 +408,7 @@ class BEAST2XML(object):
     def to_string(self, chain_length=None, default_age=None,
                   date_direction=None, log_file_basename=None,
                   trace_log_every=None, tree_log_every=None, screen_log_every=None,
+                  store_state_every=None,
                   transform_func=None, mimic_beauti=False):
         """
         Generate str version of xml.etree.ElementTree for running on BEAST.
@@ -430,6 +439,9 @@ class BEAST2XML(object):
         screen_log_every : int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
             value in the template will be retained.
+        store_state_every  : int, default=None
+            Specifying how often to write MCMC state file. If None, the
+            value in the template will be retained.
         transform_func : callable, default=None
             A callable that will be passed the C{ElementTree} instance and which
             must return an C{ElementTree} instance.
@@ -445,7 +457,7 @@ class BEAST2XML(object):
         tree = self._to_xml_tree(chain_length=chain_length, default_age=default_age,
                                  date_direction=date_direction, log_file_basename=log_file_basename,
                                  trace_log_every=trace_log_every, tree_log_every=tree_log_every,
-                                 screen_log_every=screen_log_every,
+                                 screen_log_every=screen_log_every, store_state_every=store_state_every,
                                  transform_func=transform_func, mimic_beauti=mimic_beauti)
 
         stream = six.StringIO()
@@ -455,6 +467,7 @@ class BEAST2XML(object):
     def to_xml(self, path, chain_length=None, default_age=None,
                date_direction=None, log_file_basename=None,
                trace_log_every=None, tree_log_every=None, screen_log_every=None,
+               store_state_every=None,
                transform_func=None, mimic_beauti=False):
         """
         Generate xml.etree.ElementTree for running on BEAST and write to xml file.
@@ -485,6 +498,9 @@ class BEAST2XML(object):
         screen_log_every : int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
             value in the template will be retained.
+        store_state_every  : int, default=None
+            Specifying how often to write MCMC state file. If None, the
+            value in the template will be retained.
         transform_func : callable, default=None
             A callable that will be passed the C{ElementTree} instance and which
             must return an C{ElementTree} instance.
@@ -498,7 +514,7 @@ class BEAST2XML(object):
         tree = self._to_xml_tree(chain_length=chain_length, default_age=default_age,
                                  date_direction=date_direction, log_file_basename=log_file_basename,
                                  trace_log_every=trace_log_every, tree_log_every=tree_log_every,
-                                 screen_log_every=screen_log_every,
+                                 screen_log_every=screen_log_every, store_state_every=store_state_every,
                                  transform_func=transform_func, mimic_beauti=mimic_beauti)
         tree.write(path, 'unicode' if six.PY3 else 'utf-8', xml_declaration=True)
 
@@ -599,9 +615,10 @@ class BEAST2XML(object):
         if distribution == 'Uniform':
             self.change_parameter_state_node(parameter, **kwargs)
 
+        kwargs = {key: str(value) for key, value in kwargs.items()}
         ET.SubElement(parameter_node, distribution, id=id, name="distr", **kwargs)
 
-    def add_rate_change_dates(self, parameter, dates, youngest_tip):
+    def add_rate_change_dates(self, parameter, dates):
         """
         Add specific dates for parameter changes in skyline models.
 
@@ -610,14 +627,12 @@ class BEAST2XML(object):
         parameter : str
             The name of the parameter.
         dates : list, tuple, pd.Series or pd.DatetimeIndex of dates
-        youngest_tip   : datetime.datetime
-            Date of youngest tip/sample.
 
         """
         if not isinstance(dates, (list, tuple, pd.Series, pd.DatetimeIndex)):
             raise TypeError('dates must be a list, tuple pandas.Series or pandas.DatetimeIndex.')
         year_decimals = [date_to_decimal(date) for date in dates]
-        youngest_tip = date_to_decimal(youngest_tip)
+        youngest_tip = max(self._age_by_short_id.values())
         times = [youngest_tip - year_decimal for year_decimal in year_decimals]
         self.add_rate_change_times(parameter, times)
 
