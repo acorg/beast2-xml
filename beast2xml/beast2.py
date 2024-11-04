@@ -85,14 +85,14 @@ class BEAST2XML(object):
         else:
             self._tree = ET.parse(template)
         if sequence_id_date_regex is None:
-            self._sequenceId_date_regex = None
+            self._sequence_id_date_regex = None
         else:
-            self._sequenceId_date_regex = re.compile(sequence_id_date_regex)
+            self._sequence_id_date_regex = re.compile(sequence_id_date_regex)
 
         if sequence_id_age_regex is None:
-            self._sequenceId_age_regex = None
+            self._sequence_id_age_regex = None
         else:
-            self._sequenceId_age_regex = re.compile(sequence_id_age_regex)
+            self._sequence_id_age_regex = re.compile(sequence_id_age_regex)
 
         self._sequence_id_regex_must_match = sequence_id_regex_must_match
         self._sequences = Reads()
@@ -211,8 +211,8 @@ class BEAST2XML(object):
 
         age = None
 
-        if self._sequenceId_date_regex:
-            match = self._sequenceId_date_regex.match(sequence.id)
+        if self._sequence_id_date_regex is not None:
+            match = self._sequence_id_date_regex.match(sequence.id)
             if match:
                 try:
                     sequence_date = date(
@@ -237,8 +237,8 @@ class BEAST2XML(object):
                         assert self._date_unit == "day"
                         age = days
 
-        if age is None and self._sequenceId_age_regex:
-            match = self._sequenceId_age_regex.match(sequence.id)
+        if age is None and self._sequence_id_age_regex is not None:
+            match = self._sequence_id_age_regex.match(sequence.id)
             if match:
                 try:
                     age = match.group(1)
@@ -247,7 +247,7 @@ class BEAST2XML(object):
 
         if age is None:
             if self._sequence_id_regex_must_match and (
-                    self._sequenceId_date_regex or self._sequenceId_age_regex
+                    self._sequence_id_date_regex or self._sequence_id_age_regex
             ):
                 raise ValueError(
                     "No sequence date or age could be found in %r "
@@ -269,7 +269,7 @@ class BEAST2XML(object):
         for sequence in sequences:
             self.add_sequence(sequence)
 
-    def _to_xml_tree(self, chain_length=None, default_age=None,
+    def _to_xml_tree(self, chain_length=None, default_age=0.0,
                      date_direction=None, log_file_basename=None,
                      trace_log_every=None, tree_log_every=None, screen_log_every=None,
                      store_state_every=None,
@@ -282,10 +282,10 @@ class BEAST2XML(object):
         chain_length : int, default=None
             The length of the MCMC chain. If C{None}, the value in the template will
              be retained.
-        default_age : float or int, default=None
-            If None and no age has been supplied for a sequence an error is thrown.
-            Ages can be supplied add_age or add_ages methods. If a float or int is
-            provided this value will be used if a sequences age has not been provided.
+        default_age : float or int, default=0.0
+            The age to use for sequences that have not
+            explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
+             C{add_sequences}).
         date_direction : str, default=None
             A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
              back in time from the present or forward in time from some point in the
@@ -334,20 +334,15 @@ class BEAST2XML(object):
 
         trait = elements['./run/state/tree/trait']
 
-        if default_age is not None:
-            if not isinstance(default_age, (float, int)):
-                raise TypeError('The default age must be an integer or float.')
+        if not isinstance(default_age, (float, int)):
+            raise TypeError('The default age must be an integer or float.')
 
         age_by_short_id = deepcopy(self._age_by_short_id)
         # Add in all sequences.
         for sequence in sorted(self._sequences):  # Sorting adds the sequences alphabetically like in BEAUti.
             seq_id = sequence.id
             short_id = seq_id.split()[0]
-            if seq_id not in self._age_by_full_id:
-                if default_age is None:
-                    AssertionError('No age has been provided for ' + seq_id +
-                                   '. Ages can be provided via the addAge or add_ages method.' +
-                                   'Alternatively a default_age can be supplied in this methods arguments.')
+            if seq_id not in age_by_short_id:
                 age_by_short_id[short_id] = default_age
 
             ET.SubElement(data, 'sequence', id='seq_' + short_id, spec="Sequence", taxon=short_id,
@@ -405,7 +400,7 @@ class BEAST2XML(object):
         ET.indent(tree, '\t')
         return tree
 
-    def to_string(self, chain_length=None, default_age=None,
+    def to_string(self, chain_length=None, default_age=0.0,
                   date_direction=None, log_file_basename=None,
                   trace_log_every=None, tree_log_every=None, screen_log_every=None,
                   store_state_every=None,
@@ -418,10 +413,10 @@ class BEAST2XML(object):
         chain_length : int, default=None
             The length of the MCMC chain. If C{None}, the value in the template will
              be retained.
-        default_age : float or int, default=None
-            If None and no age has been supplied for a sequence an error is thrown.
-            Ages can be supplied add_age or add_ages methods. If a float or int is
-            provided this value will be used if a sequences age has not been provided.
+       default_age : float or int, default=0.0
+            The age to use for sequences that have not
+            explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
+             C{add_sequences}).
         date_direction : str, default=None
             A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
              back in time from the present or forward in time from some point in the
@@ -464,7 +459,7 @@ class BEAST2XML(object):
         tree.write(stream, "unicode" if six.PY3 else "utf-8", xml_declaration=True)
         return stream.getvalue()
 
-    def to_xml(self, path, chain_length=None, default_age=None,
+    def to_xml(self, path, chain_length=None, default_age=0.0,
                date_direction=None, log_file_basename=None,
                trace_log_every=None, tree_log_every=None, screen_log_every=None,
                store_state_every=None,
@@ -477,10 +472,10 @@ class BEAST2XML(object):
         chain_length : int, default=None
             The length of the MCMC chain. If C{None}, the value in the template will
              be retained.
-        default_age : float or int, default=None
-            If None and no age has been supplied for a sequence an error is thrown.
-            Ages can be supplied add_age or add_ages methods. If a float or int is
-            provided this value will be used if a sequences age has not been provided.
+       default_age : float or int, default=0.0
+            The age to use for sequences that have not
+            explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
+             C{add_sequences}).
         date_direction : str, default=None
             A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
              back in time from the present or forward in time from some point in the
