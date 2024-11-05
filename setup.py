@@ -30,12 +30,6 @@ setup(
     author_email="tcj25@cam.ac.uk",
     keywords=["BEAST2", "XML"],
     classifiers=[
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -52,6 +46,6 @@ setup(
     scripts=["bin/beast2-xml.py", "bin/beast2-xml-version.py"],
     install_requires=["dark-matter>=1.1.28",
                       'pandas>=2.2.2',
-                      'python>=3.9',
+                      'python=3.10',
                       'six'],
 )
