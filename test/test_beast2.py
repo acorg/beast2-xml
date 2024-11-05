@@ -46,7 +46,7 @@ class TestTemplate(TestCase):
     @patch(
         open_,
         new_callable=mock_open,
-        read_data=("<?xml version='1.0' " "encoding='UTF-8'?><beast></beast>"),
+        read_data="<?xml version='1.0' " "encoding='UTF-8'?><beast></beast>",
     )
     def test_template_with_no_data(self, mock):
         """
@@ -165,10 +165,10 @@ class TestTemplate(TestCase):
         Passing a template filename that does not exist must raise a
         FileNotFoundError (PY3) or IOError (PY2).
         """
-        errorClass = builtins.FileNotFoundError if PY3 else IOError
-        mock.side_effect = errorClass("abc")
+        error_class = builtins.FileNotFoundError if PY3 else IOError
+        mock.side_effect = error_class("abc")
         error = "^abc$"
-        assertRaisesRegex(self, errorClass, error, BEAST2XML, template="filename")
+        assertRaisesRegex(self, error_class, error, BEAST2XML, template="filename")
 
     def test_template_is_open_file(self):
         """
@@ -197,10 +197,10 @@ class TestMisc(TestCase):
         clock model template file must raise FileNotFoundError (PY3) or
         IOError (PY2).
         """
-        errorClass = builtins.FileNotFoundError if PY3 else IOError
-        mock.side_effect = errorClass("abc")
+        error_class = builtins.FileNotFoundError if PY3 else IOError
+        mock.side_effect = error_class("abc")
         error = "^abc$"
-        assertRaisesRegex(self, errorClass, error, BEAST2XML, clock_model="filename")
+        assertRaisesRegex(self, error_class, error, BEAST2XML, clock_model="filename")
 
 
 class ClockModelMixin(object):
@@ -281,9 +281,9 @@ class ClockModelMixin(object):
         Adding a sequence with a date regex and date units in years must
         result in the expected XML.
         """
-        sequenceDate = (date.today() - timedelta(days=2 * 365)).strftime("%Y-%m-%d")
+        sequence_date = (date.today() - timedelta(days=2 * 365)).strftime("%Y-%m-%d")
         r = r"^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)"
-        id_ = "id1_" + sequenceDate
+        id_ = "id1_" + sequence_date
 
         xml = BEAST2XML(clock_model=self.clock_model, sequence_id_date_regex=r)
         xml.add_sequence(Read(id_, "ACTG"))
@@ -302,11 +302,11 @@ class ClockModelMixin(object):
         Adding a sequence with a date regex and date units in months must
         result in the expected XML.
         """
-        sequenceDate = (date.today() - timedelta(days=2 * (365.25 / 12))).strftime(
+        sequence_date = (date.today() - timedelta(days=2 * (365.25 / 12))).strftime(
             "%Y-%m-%d"
         )
         r = r"^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)"
-        id_ = "id1_" + sequenceDate
+        id_ = "id1_" + sequence_date
 
         xml = BEAST2XML(
             clock_model=self.clock_model, sequence_id_date_regex=r, date_unit="month"
@@ -327,9 +327,9 @@ class ClockModelMixin(object):
         Adding a sequence with a date regex and date units in days must
         result in the expected XML.
         """
-        sequenceDate = (date.today() - timedelta(days=10)).strftime("%Y-%m-%d")
+        sequence_date = (date.today() - timedelta(days=10)).strftime("%Y-%m-%d")
         r = r"^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)"
-        id_ = "id1_" + sequenceDate
+        id_ = "id1_" + sequence_date
 
         xml = BEAST2XML(
             clock_model=self.clock_model, sequence_id_date_regex=r, date_unit="day"

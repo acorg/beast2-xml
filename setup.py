@@ -52,5 +52,6 @@ setup(
     scripts=["bin/beast2-xml.py", "bin/beast2-xml-version.py"],
     install_requires=["dark-matter>=1.1.28",
                       'pandas>=2.2.2',
-                      'python>=3.9'],
+                      'python>=3.9',
+                      'six'],
 )

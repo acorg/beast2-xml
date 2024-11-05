@@ -173,64 +173,137 @@ There are several options you can pass to the `BEAST2XML` constructor:
 ```python
 class BEAST2XML(object):
     """
-    Create BEAST2 XML.
+    Create BEAST2 XML instance.
 
-    @param template: A C{str} filename or an open file pointer to read the
-        XML template from. If C{None}, a template based on C{clock_model}
+    Parameters
+    ----------
+    template: str, default=None
+        A filename or an open file pointer to read the
+        XML template from. If C{None}, a template based on C{clockModel}
         will be used.
-    @param clock_model: A C{str} specifying the clock model. Possible values
+    clock_model: str, default="strict"
+        Clock model to be used. Possible values
         are 'random-local', 'relaxed-exponential', 'relaxed-lognormal',
         and 'strict.
-    @param sequence_id_date_regex: If not C{None}, gives a C{str} regular
+    sequence_id_date_regex: str, default=None
+        If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence dates from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequence_id_age_regex: If not C{None}, gives a C{str} regular
+    sequence_id_age_regex: str, default=None
+        If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence ages from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequence_id_regex_must_match: If C{True} it will be considered an error
+    sequence_id_regex_must_match: bool, default=True
+        If C{True} it will be considered an error
         if a sequence id does not match the regular expression given by
-        C{sequence_id_date_regex} or C{sequence_id_age_regex}.
+        C{sequenceIdDateRegex} or C{sequenceId_age_regex}.
+    date_unit: str, default="year"
+        A C{str}, either 'day', 'month', or 'year' indicating the
+        date time unit.
+
     """
 ```
 
-and options you can pass to its `toString` method:
+and options you can pass to its `to_string` or `to_xml` methods:
 
 ```python
-def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
-             dateDirection='backward', logFileBasename=None,
-             traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-             transformFunc=None, mimicBEAUti=False):
-    """
-    @param chainLength: The C{int} length of the MCMC chain. If C{None},
-        the value in the template will be retained.
-    @param defaultAge: The C{float} age to use for sequences that are not
-        explicitly given an age via C{addAge}.
-    @param dateDirection: A C{str}, either 'backward' or 'forward'
-        indicating whether dates are back in time from the present or
-        forward in time from some point in the past.
-    @param logFileBasename: The C{str} The base filename to write logs to.
-        A .log or .trees suffix will be appended to this to make the
-        actual log file names.  If C{None}, the log file names in the
-        template will be retained.
-    @param traceLogEvery: An C{int} specifying how often to write to the
-        trace log file. If C{None}, the value in the template will be
-        retained.
-    @param treeLogEvery: An C{int} specifying how often to write to the
-        tree log file. If C{None}, the value in the template will be
-        retained.
-    @param screenLogEvery: An C{int} specifying how often to write to the
-        terminal (screen) log. If C{None}, the value in the template will
-        be retained.
-    @param transformFunc: If not C{None} A callable that will be passed
-        the C{ElementTree} instance and which must return an C{ElementTree}
-        instance.
-    @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
-        in the way that BEAUti does, to allow BEAUti to load the XML we
-        produce.
-    @raise ValueError: If any required tree elements cannot be found
-        (raised by our call to self.findElements).
-    @return: C{str} XML.
-    """
+    def to_string(self, chain_length=None, default_age=0.0,
+                  date_direction=None, log_file_basename=None,
+                  trace_log_every=None, tree_log_every=None, screen_log_every=None,
+                  store_state_every=None,
+                  transform_func=None, mimic_beauti=False):
+        """
+        Generate str version of xml.etree.ElementTree for running on BEAST.
+
+        Parameters
+        ----------
+        chain_length : int, default=None
+            The length of the MCMC chain. If C{None}, the value in the template will
+             be retained.
+       default_age : float or int, default=0.0
+            The age to use for sequences that have not
+            explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
+             C{add_sequences}).
+        date_direction : str, default=None
+            A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
+             back in time from the present or forward in time from some point in the
+              past.
+        log_file_basename : str, default=None
+            The base filename to write logs to. A .log or .trees suffix will be appended
+            to this to make the actual log file names.  If None, the log file names in
+            the template will be retained.
+        trace_log_every : int, default=None
+            Specifying how often to write to the trace log file. If None, the value in the
+            template will be retained.
+        tree_log_every : int, default=None
+            Specifying how often to write to the tree log file. If None, the value in the
+            template will be retained.
+        screen_log_every : int, default=None
+            Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        store_state_every  : int, default=None
+            Specifying how often to write MCMC state file. If None, the
+            value in the template will be retained.
+        transform_func : callable, default=None
+            A callable that will be passed the C{ElementTree} instance and which
+            must return an C{ElementTree} instance.
+        mimic_beauti : bool, default=False
+            If True, add attributes to the <beast> tag in the way that BEAUti does, to
+            allow BEAUti to load the XML we produce.
+
+        Returns
+        -------
+        tree: str
+            String representation of xml.etree.ElementTree for running on BEAST
+        """
+```
+
+```python
+    def to_xml(self, path, chain_length=None, default_age=0.0,
+               date_direction=None, log_file_basename=None,
+               trace_log_every=None, tree_log_every=None, screen_log_every=None,
+               store_state_every=None,
+               transform_func=None, mimic_beauti=False):
+        """
+        Generate xml.etree.ElementTree for running on BEAST and write to xml file.
+
+        Parameters
+        ----------
+        chain_length : int, default=None
+            The length of the MCMC chain. If C{None}, the value in the template will
+             be retained.
+       default_age : float or int, default=0.0
+            The age to use for sequences that have not
+            explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
+             C{add_sequences}).
+        date_direction : str, default=None
+            A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
+             back in time from the present or forward in time from some point in the
+              past.
+        log_file_basename : str, default=None
+            The base filename to write logs to. A .log or .trees suffix will be appended
+            to this to make the actual log file names.  If None, the log file names in
+            the template will be retained.
+        trace_log_every : int, default=None
+            Specifying how often to write to the trace log file. If None, the value in the
+            template will be retained.
+        tree_log_every : int, default=None
+            Specifying how often to write to the tree log file. If None, the value in the
+            template will be retained.
+        screen_log_every : int, default=None
+            Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        store_state_every  : int, default=None
+            Specifying how often to write MCMC state file. If None, the
+            value in the template will be retained.
+        transform_func : callable, default=None
+            A callable that will be passed the C{ElementTree} instance and which
+            must return an C{ElementTree} instance.
+        mimic_beauti : bool, default=False
+            If True, add attributes to the <beast> tag in the way that BEAUti does, to
+            allow BEAUti to load the XML we produce.
+
+        """
 ```
 
 An example of using the Python class can be found in the

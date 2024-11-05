@@ -9,10 +9,10 @@ import xml
 
 from importlib.resources import files
 
-
 from dark.reads import Reads
 import pandas as pd
 from copy import deepcopy
+
 
 def delete_child_nodes(node):
     """
@@ -26,6 +26,7 @@ def delete_child_nodes(node):
     # Delete any existing children of xml node.
     for child in list(node):
         node.remove(child)
+
 
 class BEAST2XML(object):
     """
@@ -66,7 +67,7 @@ class BEAST2XML(object):
         'samplingRateChangeTimes': 'samplingProportion'
     }
     _distribution_args = {
-        'Uniform':  ['lower', 'upper']
+        'Uniform': ['lower', 'upper']
     }
 
     def __init__(
@@ -80,7 +81,7 @@ class BEAST2XML(object):
     ):
         if template is None:
             self._tree = ET.parse(
-                files("beast2xml").joinpath(f"templates/{clock_model}.xml")
+                files('beast2xml').joinpath(f'templates/{clock_model}.xml')
             )
         else:
             self._tree = ET.parse(template)
@@ -114,8 +115,8 @@ class BEAST2XML(object):
         Returns
         -------
         result: dict {str:xml.etree.ElementTree.Element}
-            A dictionary where the keys are the element_path names and the values are the
-            corresponding elements.
+            A dictionary where the keys are the element_path names and the values
+            are the corresponding elements.
 
         """
         result = {}
@@ -137,7 +138,7 @@ class BEAST2XML(object):
 
         return result
 
-    def add_ages(self, age_data, seperator='\t', age_column = 'year_decimal'):
+    def add_ages(self, age_data, seperator='\t', age_column='year_decimal'):
         """
         Add age data.
 
@@ -196,7 +197,7 @@ class BEAST2XML(object):
         ----------
         sequence : dark.read
             Sequence to be added.
-        age : str, default=None
+        age : float, default=None
             If not C{None}, the C{float} age of the sequence.
 
         Returns
@@ -400,47 +401,52 @@ class BEAST2XML(object):
         ET.indent(tree, '\t')
         return tree
 
-    def to_string(self, chain_length=None, default_age=0.0,
-                  date_direction=None, log_file_basename=None,
-                  trace_log_every=None, tree_log_every=None, screen_log_every=None,
+    def to_string(self,
+                  chain_length=None,
+                  default_age=0.0,
+                  date_direction=None,
+                  log_file_basename=None,
+                  trace_log_every=None,
+                  tree_log_every=None,
+                  screen_log_every=None,
                   store_state_every=None,
-                  transform_func=None, mimic_beauti=False):
-        """
-        Generate str version of xml.etree.ElementTree for running on BEAST.
+                  transform_func=None,
+                  mimic_beauti=False):
+        """ Generate str version of xml.etree.ElementTree for running on BEAST.
 
         Parameters
         ----------
-        chain_length : int, default=None
+        chain_length: int, default=None
             The length of the MCMC chain. If C{None}, the value in the template will
              be retained.
-       default_age : float or int, default=0.0
+        default_age: float or int, default=0.0
             The age to use for sequences that have not
             explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
              C{add_sequences}).
-        date_direction : str, default=None
+        date_direction: str, default=None
             A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
              back in time from the present or forward in time from some point in the
               past.
-        log_file_basename : str, default=None
+        log_file_basename: str, default=None
             The base filename to write logs to. A .log or .trees suffix will be appended
             to this to make the actual log file names.  If None, the log file names in
-            the template will be retained.
-        trace_log_every : int, default=None
+            the template will be retained
+        trace_log_every: int, default=None
             Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
-        tree_log_every : int, default=None
+        tree_log_every: int, default=None
             Specifying how often to write to the tree log file. If None, the value in the
             template will be retained.
-        screen_log_every : int, default=None
+        screen_log_every: int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
             value in the template will be retained.
-        store_state_every  : int, default=None
+        store_state_every: int, default=None
             Specifying how often to write MCMC state file. If None, the
             value in the template will be retained.
-        transform_func : callable, default=None
+        transform_func: callable, default=None
             A callable that will be passed the C{ElementTree} instance and which
             must return an C{ElementTree} instance.
-        mimic_beauti : bool, default=False
+        mimic_beauti: bool, default=False
             If True, add attributes to the <beast> tag in the way that BEAUti does, to
             allow BEAUti to load the XML we produce.
 
@@ -459,49 +465,62 @@ class BEAST2XML(object):
         tree.write(stream, "unicode" if six.PY3 else "utf-8", xml_declaration=True)
         return stream.getvalue()
 
-    def to_xml(self, path, chain_length=None, default_age=0.0,
-               date_direction=None, log_file_basename=None,
-               trace_log_every=None, tree_log_every=None, screen_log_every=None,
+    def to_xml(self,
+               path,
+               chain_length=None,
+               default_age=0.0,
+               date_direction=None,
+               log_file_basename=None,
+               trace_log_every=None,
+               tree_log_every=None,
+               screen_log_every=None,
                store_state_every=None,
-               transform_func=None, mimic_beauti=False):
+               transform_func=None,
+               mimic_beauti=False):
         """
         Generate xml.etree.ElementTree for running on BEAST and write to xml file.
 
         Parameters
         ----------
+        path: str
+            Path to write xml file to.
         chain_length : int, default=None
             The length of the MCMC chain. If C{None}, the value in the template will
              be retained.
-       default_age : float or int, default=0.0
+        default_age: float or int, default=0.0
             The age to use for sequences that have not
             explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
              C{add_sequences}).
-        date_direction : str, default=None
+        date_direction: str, default=None
             A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
-             back in time from the present or forward in time from some point in the
-              past.
-        log_file_basename : str, default=None
+            back in time from the present or forward in time from some point in the
+            past.
+        log_file_basename: str, default=None
             The base filename to write logs to. A .log or .trees suffix will be appended
             to this to make the actual log file names.  If None, the log file names in
             the template will be retained.
-        trace_log_every : int, default=None
+        trace_log_every: int, default=None
             Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
-        tree_log_every : int, default=None
+        tree_log_every: int, default=None
             Specifying how often to write to the tree log file. If None, the value in the
             template will be retained.
-        screen_log_every : int, default=None
+        screen_log_every: int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
             value in the template will be retained.
-        store_state_every  : int, default=None
+        store_state_every : int, default=None
             Specifying how often to write MCMC state file. If None, the
             value in the template will be retained.
-        transform_func : callable, default=None
+        transform_func: callable, default=None
             A callable that will be passed the C{ElementTree} instance and which
             must return an C{ElementTree} instance.
-        mimic_beauti : bool, default=False
+        mimic_beauti: bool, default=False
             If True, add attributes to the <beast> tag in the way that BEAUti does, to
             allow BEAUti to load the XML we produce.
+
+        Returns
+        -------
+        None
 
         """
         if not isinstance(path, str):
@@ -569,7 +588,7 @@ class BEAST2XML(object):
 
     def change_prior(self, parameter, distribution, wild_card_ending=True, **kwargs):
         """
-        Change the values of a paramters prior.
+        Change the values of a parameters prior.
 
         Parameters
         ----------
@@ -606,12 +625,12 @@ class BEAST2XML(object):
                 raise ValueError('%s has not being given as a kwarg.' % arg)
 
         delete_child_nodes(parameter_node)
-        id = '_'.join([parameter, distribution])
+        i_d = '_'.join([parameter, distribution])
         if distribution == 'Uniform':
             self.change_parameter_state_node(parameter, **kwargs)
 
         kwargs = {key: str(value) for key, value in kwargs.items()}
-        ET.SubElement(parameter_node, distribution, id=id, name="distr", **kwargs)
+        ET.SubElement(parameter_node, distribution, id=i_d, name="distr", **kwargs)
 
     def add_rate_change_dates(self, parameter, dates):
         """
@@ -626,7 +645,7 @@ class BEAST2XML(object):
         """
         if not isinstance(dates, (list, tuple, pd.Series, pd.DatetimeIndex)):
             raise TypeError('dates must be a list, tuple pandas.Series or pandas.DatetimeIndex.')
-        year_decimals = [date_to_decimal(date) for date in dates]
+        year_decimals = [date_to_decimal(item) for item in dates]
         youngest_tip = max(self._age_by_short_id.values())
         times = [youngest_tip - year_decimal for year_decimal in year_decimals]
         self.add_rate_change_times(parameter, times)
@@ -643,7 +662,8 @@ class BEAST2XML(object):
             Times of changes.
 
         """
-        skyline_element = self._tree.find("./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']")
+        skyline_element = self._tree.find(
+            "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']")
         if skyline_element is None:
             raise ValueError(
                 'No distribution of spec BirthDeathSkylineModel was found.' +
@@ -671,15 +691,15 @@ class BEAST2XML(object):
                 'samplingRateChangeTimes (for sampling proportion).'
             )
         rev_time_array = [str(val).lower() for val in rev_time_array]
-        rev_time_array  = ' '.join(rev_time_array)
+        rev_time_array = ' '.join(rev_time_array)
         ET.SubElement(skyline_element,
                       'reverseTimeArrays',
                       spec="beast.core.parameter.BooleanParameter",
                       value=rev_time_array)
         parameter_element = skyline_element.find(parameter)
         if parameter_element is not None:
-            del parameter_element # delete old parameter element_path if it exists.
-        if not any(time== 0.0 for time in times):
+            del parameter_element  # delete old parameter element_path if it exists.
+        if not any(time == 0.0 for time in times):
             times.append(0.0)
         dimensions = len(times)
         ET.SubElement(skyline_element,
@@ -689,12 +709,3 @@ class BEAST2XML(object):
         self.change_parameter_state_node(
             self._rate_change_to_param_dict[parameter],
             dimension=dimensions)
-
-
-
-
-
-
-
-
-
