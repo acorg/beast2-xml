@@ -210,6 +210,6 @@ print(
         trace_log_every=args.trace_log_every,
         tree_log_every=args.trace_log_every,
         screen_log_every=args.screen_log_every,
-        mimic_beauti=mimic_beauti,
+        mimic_beauti=args.mimic_beauti,
     ).replace('" /><sequence', '" />\n    <sequence')
 )
