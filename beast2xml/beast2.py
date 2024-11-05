@@ -67,7 +67,16 @@ class BEAST2XML(object):
         'samplingRateChangeTimes': 'samplingProportion'
     }
     _distribution_args = {
-        'Uniform': ['lower', 'upper']
+        'Uniform': ['lower', 'upper', 'offset'],
+        'LogNormal': ['meanInRealSpace', 'M', 'S', 'offset'],
+        'Beta': ['alpha', 'beta', 'offset'],
+        'Gamma': ['alpha', 'beta', 'offset'],
+        'InverseGamma': ['alpha', 'beta', 'offset'],
+        'LaplaceDistribution': ['mu', 'scale', 'offset'],
+        'Exponential': ['mean', 'offset'],
+        'Normal': ['mean', 'sigma', 'offset'],
+        'WeibullDistribution': ['shape', 'scale', 'meanOne', 'offset'],
+        'Poisson': ["lambda", 'offset']
     }
 
     def __init__(
@@ -607,13 +616,50 @@ class BEAST2XML(object):
             parameter,
             wild_card_ending
         )
-        if distribution == 'uniform':
-            distribution = 'Uniform'
+
+        if distribution in ['lognorm', 'lognormal',
+                            'log norm', 'log normal',
+                            'log-norm', 'log-normal']:
+            distribution = 'LogNormal'
+        elif distribution in ['inversegamma',
+                              'inverse gamma',
+                              'inverse-gamma']:
+            distribution = 'InverseGamma'
+        elif distribution in ['LogNormal', 'InverseGamma', 'WeibullDistribution', 'LaplaceDistribution']:
+            pass
+        else:
+            distribution = distribution.title()
+
+        if distribution in ['Weibull', 'Laplace']:
+            distribution = distribution + 'Distribution'
+
         if distribution not in self._distribution_args:
             raise ValueError(
                 'Currently only the following distributions are supported: ' +
                 ', '.join(self._distribution_args.keys()) + '.'
             )
+
+        if distribution == 'LogNormal':
+            if 'meanInRealSpace' not in kwargs:
+                kwargs['meanInRealSpace'] = 'false'
+            elif isinstance(kwargs['meanInRealSpace'], bool):
+                kwargs['meanInRealSpace'] = str(kwargs['meanInRealSpace']).lower()
+            else:
+                raise TypeError('Argument meanInRealSpace must be a boolean or' +
+                                ' not given as argument.')
+
+        if distribution == 'WeibullDistribution':
+            if 'meanOne' not in kwargs:
+                kwargs['meanOne'] = 'false'
+            elif isinstance(kwargs['meanOne'], bool):
+                kwargs['meanOne'] = str(kwargs['meanOne']).lower()
+            else:
+                raise TypeError('Argument meanOne must be a boolean or' +
+                                ' not given as argument.')
+
+        if 'offset' not in kwargs:
+            kwargs['offset'] = 0.0
+
         for key in kwargs:
             if key not in self._distribution_args[distribution]:
                 raise ValueError(
@@ -624,13 +670,25 @@ class BEAST2XML(object):
             if arg not in kwargs.keys():
                 raise ValueError('%s has not being given as a kwarg.' % arg)
 
+        for keyword, value in kwargs.items():
+            if keyword not in ['meanInRealSpace', 'meanOne']:
+                if isinstance(value, (int, float)):
+                    raise TypeError('Argument %s must be an integer or float.' % keyword)
+        kwargs = {key: str(value) for key, value in kwargs.items()}
+
         delete_child_nodes(parameter_node)
         i_d = '_'.join([parameter, distribution])
         if distribution == 'Uniform':
             self.change_parameter_state_node(parameter, **kwargs)
 
-        kwargs = {key: str(value) for key, value in kwargs.items()}
-        ET.SubElement(parameter_node, distribution, id=i_d, name="distr", **kwargs)
+        if distribution in ['Poisson', 'WeibullDistribution']:
+            ET.SubElement(parameter_node,
+                          'distr',
+                          id=i_d,
+                          spec="beast.math.distributions."+distribution,
+                          **kwargs)
+        else:
+            ET.SubElement(parameter_node, distribution, id=i_d, name="distr", **kwargs)
 
     def add_rate_change_dates(self, parameter, dates):
         """
