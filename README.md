@@ -45,14 +45,14 @@ Run `beast2-xml.py --help` to see currently supported options:
 
 ```sh
 $ beast2-xml.py --help
-usage: beast2-xml.py [-h] [--clockModel MODEL | --templateFile FILENAME]
-                     [--chainLength LENGTH] [--age ID=N [ID=N ...]]
-                     [--defaultAge N] [--dateUnit UNIT]
-                     [--dateDirection DIRECTION]
-                     [--logFileBasename BASE-FILENAME] [--traceLogEvery N]
-                     [--treeLogEvery N] [--screenLogEvery N] [--mimicBEAUti]
-                     [--sequenceIdDateRegex REGEX]
-                     [--sequenceIdAgeRegex REGEX]
+usage: beast2-xml.py [-h] [--clock_model MODEL | --templateFile FILENAME]
+                     [--chain_length LENGTH] [--age ID=N [ID=N ...]]
+                     [--default_age N] [--date_unit UNIT]
+                     [--date_direction DIRECTION]
+                     [--log_file_basename BASE-FILENAME] [--trace_log_every N]
+                     [--tree_log_every N] [--screen_log_every N] [--mimic_beauti]
+                     [--sequence_id_date_regex REGEX]
+                     [--sequence_id_age_regex REGEX]
                      [--sequenceIdRegexMayNotMatch] [--fastaFile FILENAME]
                      [--readClass CLASSNAME] [--fasta | --fastq | --fasta-ss]
 
@@ -61,43 +61,43 @@ BEAST2 input file on stdout.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --clockModel MODEL    Specify the clock model. Possible values are 'random-
+  --clock_model MODEL    Specify the clock model. Possible values are 'random-
                         local', 'relaxed-exponential', 'relaxed-lognormal', or
                         'strict' (default: strict)
   --templateFile FILENAME
                         The XML template file to use. (default: None)
-  --chainLength LENGTH  The MCMC chain length. (default: None)
+  --chain_length LENGTH  The MCMC chain length. (default: None)
   --age ID=N [ID=N ...]
                         The age of a sequence. The format is a sequence id, an
                         equals sign, then the age. For convenience, just the
                         first part of a full sequence id (i.e., up to the
                         first space) may be given. May be specified multiple
                         times. (default: None)
-  --defaultAge N        The age to use for sequences that are not explicitly
+  --default_age N        The age to use for sequences that are not explicitly
                         given an age via --age. (default: 0.0)
-  --dateUnit UNIT       Specify the date unit. Possible values are 'day',
+  --date_unit UNIT       Specify the date unit. Possible values are 'day',
                         'month', or 'year'. (default: year)
-  --dateDirection DIRECTION
+  --date_direction DIRECTION
                         Specify whether dates are back in time from the
                         present or forward in time from some point in the
                         past. Possible values are 'forward' or 'backward'.
                         (default: backward)
-  --logFileBasename BASE-FILENAME
+  --log_file_basename BASE-FILENAME
                         The base filename to write logs to. A ".log" or
                         ".trees" suffix will be appended to this to make
                         complete log file names. (default: beast-output)
-  --traceLogEvery N     How often to write to the trace log file. (default:
+  --trace_log_every N     How often to write to the trace log file. (default:
                         2000)
-  --treeLogEvery N      How often to write to the tree log file. (default:
+  --tree_log_every N      How often to write to the tree log file. (default:
                         2000)
-  --screenLogEvery N    How often to write logging to the screen (i.e.,
+  --screen_log_every N    How often to write logging to the screen (i.e.,
                         terminal). (default: 2000)
-  --mimicBEAUti         If specified, add attributes to the <beast> tag that
+  --mimic_beauti         If specified, add attributes to the <beast> tag that
                         mimic what BEAUti uses so that BEAUti will be able to
                         load the XML. (default: False)
 
 
-  --sequenceIdDateRegex REGEX
+  --sequence_id_date_regex REGEX
                         A regular expression that will be used to capture sequence
                         dates from their ids. The regular expression must have three
                         named capture regions ("year", "month", and "day"). Regular
@@ -105,20 +105,20 @@ optional arguments:
                         (i.e., Python's re.match function is used, not the re.search
                         function), so you must explicitly match the id from its beginning.
                         For example, you might use
-                        --sequenceIdDateRegex '^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'.
+                        --sequence_id_date_regex '^.*_(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'.
                         (default: None)
-  --sequenceIdAgeRegex REGEX
+  --sequence_id_age_regex REGEX
                         A regular expression that will be used to capture sequence ages
                         from their ids. The regular expression must have a single capture
                         region. Regular expression matching is anchored to the start of
                         the id string (i.e., Python's re.match function is used, not the
                         re.search function), so you must explicitly match the id from its
-                        beginning. For example, you might use --sequenceIdAgeRegex '^.*_(\d+)$'
+                        beginning. For example, you might use --sequence_id_age_regex '^.*_(\d+)$'
                         to capture an age preceded by an underscore at the very end of the
-                        sequence id. If --sequenceIdDateRegex is also given, it
+                        sequence id. If --sequence_id_date_regex is also given, it
                         takes precedence when matching sequence ids. (default: None)
   --sequenceIdRegexMayNotMatch
-                        If specified (and --sequenceIdDateRegex or --sequenceIdAgeRegex is given)
+                        If specified (and --sequence_id_date_regex or --sequence_id_age_regex is given)
                         it will not be considered an error if a sequence id does not
                         match the given regular expression. In that case, sequences will be assigned
                         an age of zero unless one is given via --age. (default: False)
@@ -165,7 +165,7 @@ The simplest possible usage is
 ```python
 from beast2xml import BEAST2XML
 
-print(BEAST2XML().toString())
+print(BEAST2XML().to_string())
 ```
 
 There are several options you can pass to the `BEAST2XML` constructor:
@@ -173,70 +173,160 @@ There are several options you can pass to the `BEAST2XML` constructor:
 ```python
 class BEAST2XML(object):
     """
-    Create BEAST2 XML.
+    Create BEAST2 XML instance.
 
-    @param template: A C{str} filename or an open file pointer to read the
+    Parameters
+    ----------
+    template: str, default=None
+        A filename or an open file pointer to read the
         XML template from. If C{None}, a template based on C{clockModel}
         will be used.
-    @param clockModel: A C{str} specifying the clock model. Possible values
+    clock_model: str, default="strict"
+        Clock model to be used. Possible values
         are 'random-local', 'relaxed-exponential', 'relaxed-lognormal',
         and 'strict.
-    @param sequenceIdDateRegex: If not C{None}, gives a C{str} regular
+    sequence_id_date_regex: str, default=None
+        If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence dates from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequenceIdAgeRegex: If not C{None}, gives a C{str} regular
+    sequence_id_age_regex: str, default=None
+        If not C{None}, gives a C{str} regular
         expression that will be used to capture sequence ages from their ids.
         See the explanation in ../bin/beast2-xml.py
-    @param sequenceIdRegexMustMatch: If C{True} it will be considered an error
+    sequence_id_regex_must_match: bool, default=True
+        If C{True} it will be considered an error
         if a sequence id does not match the regular expression given by
-        C{sequenceIdDateRegex} or C{sequenceIdAgeRegex}.
+        C{sequenceIdDateRegex} or C{sequenceId_age_regex}.
+    date_unit: str, default="year"
+        A C{str}, either 'day', 'month', or 'year' indicating the
+        date time unit.
+
     """
 ```
 
-and options you can pass to its `toString` method:
+and options you can pass to its `to_string` or `to_xml` methods:
 
 ```python
-def toString(self, chainLength=None, defaultAge=0.0, dateUnit='year',
-             dateDirection='backward', logFileBasename=None,
-             traceLogEvery=None, treeLogEvery=None, screenLogEvery=None,
-             transformFunc=None, mimicBEAUti=False):
-    """
-    @param chainLength: The C{int} length of the MCMC chain. If C{None},
-        the value in the template will be retained.
-    @param defaultAge: The C{float} age to use for sequences that are not
-        explicitly given an age via C{addAge}.
-    @param dateDirection: A C{str}, either 'backward' or 'forward'
-        indicating whether dates are back in time from the present or
-        forward in time from some point in the past.
-    @param logFileBasename: The C{str} The base filename to write logs to.
-        A .log or .trees suffix will be appended to this to make the
-        actual log file names.  If C{None}, the log file names in the
-        template will be retained.
-    @param traceLogEvery: An C{int} specifying how often to write to the
-        trace log file. If C{None}, the value in the template will be
-        retained.
-    @param treeLogEvery: An C{int} specifying how often to write to the
-        tree log file. If C{None}, the value in the template will be
-        retained.
-    @param screenLogEvery: An C{int} specifying how often to write to the
-        terminal (screen) log. If C{None}, the value in the template will
-        be retained.
-    @param transformFunc: If not C{None} A callable that will be passed
-        the C{ElementTree} instance and which must return an C{ElementTree}
-        instance.
-    @param mimicBEAUti: If C{True}, add attributes to the <beast> tag
-        in the way that BEAUti does, to allow BEAUti to load the XML we
-        produce.
-    @raise ValueError: If any required tree elements cannot be found
-        (raised by our call to self.findElements).
-    @return: C{str} XML.
-    """
+    def to_string(self,
+                  chain_length=None,
+                  default_age=0.0,
+                  date_direction=None,
+                  log_file_basename=None,
+                  trace_log_every=None,
+                  tree_log_every=None,
+                  screen_log_every=None,
+                  store_state_every=None,
+                  transform_func=None,
+                  mimic_beauti=False):
+        """ Generate str version of xml.etree.ElementTree for running on BEAST.
+
+        Parameters
+        ----------
+        chain_length: int, default=None
+            The length of the MCMC chain. If C{None}, the value in the template will
+             be retained.
+        default_age: float or int, default=0.0
+            The age to use for sequences that have not
+            explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
+             C{add_sequences}).
+        date_direction: str, default=None
+            A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
+             back in time from the present or forward in time from some point in the
+              past.
+        log_file_basename: str, default=None
+            The base filename to write logs to. A .log or .trees suffix will be appended
+            to this to make the actual log file names.  If None, the log file names in
+            the template will be retained
+        trace_log_every: int, default=None
+            Specifying how often to write to the trace log file. If None, the value in the
+            template will be retained.
+        tree_log_every: int, default=None
+            Specifying how often to write to the tree log file. If None, the value in the
+            template will be retained.
+        screen_log_every: int, default=None
+            Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        store_state_every: int, default=None
+            Specifying how often to write MCMC state file. If None, the
+            value in the template will be retained.
+        transform_func: callable, default=None
+            A callable that will be passed the C{ElementTree} instance and which
+            must return an C{ElementTree} instance.
+        mimic_beauti: bool, default=False
+            If True, add attributes to the <beast> tag in the way that BEAUti does, to
+            allow BEAUti to load the XML we produce.
+
+        Returns
+        -------
+        tree: str
+            String representation of xml.etree.ElementTree for running on BEAST
+        """
+```
+
+```python
+    def to_xml(self,
+               path,
+               chain_length=None,
+               default_age=0.0,
+               date_direction=None,
+               log_file_basename=None,
+               trace_log_every=None,
+               tree_log_every=None,
+               screen_log_every=None,
+               store_state_every=None,
+               transform_func=None,
+               mimic_beauti=False):
+        """
+        Generate xml.etree.ElementTree for running on BEAST and write to xml file.
+
+        Parameters
+        ----------
+        path: str
+            Path to write xml file to.
+        chain_length : int, default=None
+            The length of the MCMC chain. If C{None}, the value in the template will
+             be retained.
+        default_age: float or int, default=0.0
+            The age to use for sequences that have not
+            explicitly been given (see C{add_age}, C{add_ages} C{add_sequence},
+             C{add_sequences}).
+        date_direction: str, default=None
+            A C{str}, either 'backward', 'forward' or "date" indicating whether dates are
+            back in time from the present or forward in time from some point in the
+            past.
+        log_file_basename: str, default=None
+            The base filename to write logs to. A .log or .trees suffix will be appended
+            to this to make the actual log file names.  If None, the log file names in
+            the template will be retained.
+        trace_log_every: int, default=None
+            Specifying how often to write to the trace log file. If None, the value in the
+            template will be retained.
+        tree_log_every: int, default=None
+            Specifying how often to write to the tree log file. If None, the value in the
+            template will be retained.
+        screen_log_every: int, default=None
+            Specifying how often to write to the terminal (screen) log. If None, the
+            value in the template will be retained.
+        store_state_every : int, default=None
+            Specifying how often to write MCMC state file. If None, the
+            value in the template will be retained.
+        transform_func: callable, default=None
+            A callable that will be passed the C{ElementTree} instance and which
+            must return an C{ElementTree} instance.
+        mimic_beauti: bool, default=False
+            If True, add attributes to the <beast> tag in the way that BEAUti does, to
+            allow BEAUti to load the XML we produce.
+
+        Returns
+        -------
+        None
+
+        """
 ```
 
 An example of using the Python class can be found in the
 [beast2-xml.py](bin/beast2-xml.py) script.  Small examples showing all
-functionality can be found in the tests in
-[test/testBeast2.py](test/testBeast2.py).
+functionality can be found in the tests in [test/test_beast2.py](test/test_beast2.py).
 
 ## Development
 
