@@ -6,7 +6,6 @@ from dark.reads import Read
 from beast2xml import BEAST2XML
 from datetime import date, timedelta
 
-
 try:
     from unittest.mock import mock_open, patch
 except ImportError:
@@ -230,32 +229,38 @@ class ClockModelMixin(object):
 
         # The sequence id with the default age of 0.0 must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'], "id1=0.0")
+        self.assertEqual(trait.attrib["value"], "id1=0.0")
 
     def test_sequence_id_age_regex(self):
         """
         Using a sequence id age regex must result in the expected XML.
         """
-        xml = BEAST2XML(clock_model=self.clock_model, sequence_id_age_regex="^.*_([0-9]+)")
+        xml = BEAST2XML(
+            clock_model=self.clock_model, sequence_id_age_regex="^.*_([0-9]+)"
+        )
         xml.add_sequence(Read("id1_80_xxx", "ACTG"))
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the default age of 0.0 must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'], "id1_80_xxx=80.0")
+        self.assertEqual(trait.attrib["value"], "id1_80_xxx=80.0")
 
     def test_sequence_id_age_regex_non_matching(self):
         """
         Using a sequence id age regex with a sequence id that does not match
         must result in a ValueError.
         """
-        xml = BEAST2XML(clock_model=self.clock_model, sequence_id_age_regex="^.*_([0-9]+)")
+        xml = BEAST2XML(
+            clock_model=self.clock_model, sequence_id_age_regex="^.*_([0-9]+)"
+        )
         error = (
             r"^No sequence date or age could be found in 'id1' using the "
             r"sequence id date/age regular expressions\.$"
         )
-        assertRaisesRegex(self, ValueError, error, xml.add_sequence, Read("id1", "ACTG"))
+        assertRaisesRegex(
+            self, ValueError, error, xml.add_sequence, Read("id1", "ACTG")
+        )
 
     def test_sequence_id_regex_non_matching_not_an_error(self):
         """
@@ -274,7 +279,7 @@ class ClockModelMixin(object):
 
         # The sequence id with the passed default age must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'], "id1_xxx=50")
+        self.assertEqual(trait.attrib["value"], "id1_xxx=50")
 
     def test_one_sequence_with_date_regex_and_date_unit_in_years(self):
         """
@@ -293,7 +298,7 @@ class ClockModelMixin(object):
         # The sequence id with an age of ~2 years must be in the traits.
         trait = elements["./run/state/tree/trait"]
         # Note that the following is not exact!
-        trait_value = float(trait.attrib['value'].split("=")[1])
+        trait_value = float(trait.attrib["value"].split("=")[1])
         self.assertAlmostEqual(trait_value, 1.97, places=1)
         self.assertIs(None, trait.get("units"))
 
@@ -318,7 +323,7 @@ class ClockModelMixin(object):
         # The sequence id with an age of ~2 months must be in the traits.
         trait = elements["./run/state/tree/trait"]
         # Note that the following is not exact!
-        trait_value = float(trait.attrib['value'].split("=")[1])
+        trait_value = float(trait.attrib["value"].split("=")[1])
         self.assertAlmostEqual(trait_value, 1.9712, places=2)
         self.assertEqual("month", trait.get("units"))
 
@@ -340,7 +345,7 @@ class ClockModelMixin(object):
 
         # The sequence id with an age of 10 days must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'], id_+"=10.0")
+        self.assertEqual(trait.attrib["value"], id_ + "=10.0")
         self.assertEqual("day", trait.get("units"))
 
     def test_one_sequence_with_age(self):
@@ -355,7 +360,7 @@ class ClockModelMixin(object):
 
         # The sequence id with the given age must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'],"id1=44")
+        self.assertEqual(trait.attrib["value"], "id1=44")
 
     def test_one_sequence_with_age_added_together(self):
         """
@@ -369,7 +374,7 @@ class ClockModelMixin(object):
 
         # The sequence id with the given age must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'], "id1=44")
+        self.assertEqual(trait.attrib["value"], "id1=44")
 
     def test_add_sequences(self):
         """
@@ -411,7 +416,7 @@ class ClockModelMixin(object):
 
         # The sequence ids with the default age of 0.0 must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'], 'id1=0.0,id2=0.0,id3=0.0')
+        self.assertEqual(trait.attrib["value"], "id1=0.0,id2=0.0,id3=0.0")
 
     def test_chain_length(self):
         """
@@ -433,7 +438,7 @@ class ClockModelMixin(object):
 
         # The sequence id with the default age of 33.0 must be in the traits.
         trait = elements["./run/state/tree/trait"]
-        self.assertEqual(trait.attrib['value'], 'id1=33.0')
+        self.assertEqual(trait.attrib["value"], "id1=33.0")
 
     def test_log_file_base_name(self):
         """
