@@ -6,6 +6,9 @@ from datetime import date
 from beast2xml.date_utilities import date_to_decimal
 import xml.etree.ElementTree as ET
 import xml
+import ete3
+
+import warnings
 
 from importlib.resources import files
 
@@ -110,16 +113,17 @@ class BEAST2XML(object):
         self._age_by_full_id = {}
         self._age_by_short_id = {}
         self._date_unit = date_unit
+        self._initial_phylo_tree = None
 
     @staticmethod
     def find_elements(tree):
         """
-        Check that an XML tree has the required structure and return the found
+        Check that an XML file_path has the required structure and return the found
         elements.
 
         Parameters
         ----------
-        tree : xml.etree.ElementTree.Element
+        file_path : xml.etree.ElementTree.Element
 
 
         Returns
@@ -321,7 +325,7 @@ class BEAST2XML(object):
             Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
         tree_log_every : int, default=None
-            Specifying how often to write to the tree log file. If None, the value in the
+            Specifying how often to write to the file_path log file. If None, the value in the
             template will be retained.
         screen_log_every : int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
@@ -338,7 +342,7 @@ class BEAST2XML(object):
 
         Returns
         -------
-        tree: xml.etree.ElementTree
+        file_path: xml.etree.ElementTree
             ElementTree for running on BEAST
         """
         if mimic_beauti:
@@ -352,18 +356,71 @@ class BEAST2XML(object):
         data = elements["data"]
         data_id = data.get("id")
         tree_logger_key = "./run/logger[@id='treelog.t:" + data_id + "']"
+        trait = elements["./run/state/tree/trait"]
+
         # Delete any existing children of the data node.
         delete_child_nodes(data)
-
-        trait = elements["./run/state/tree/trait"]
 
         if not isinstance(default_age, (float, int)):
             raise TypeError("The default age must be an integer or float.")
 
+        sequences = self._sequences
         age_by_short_id = deepcopy(self._age_by_short_id)
+        if self._initial_phylo_tree is not None:
+            tip_set_diffs = self.set_diffs_initial_tree_and_sequences()
+            if tip_set_diffs["in initial tree"]:
+                raise ValueError(
+                    "Initial tree has additional sequences to the ones you have added."
+                )
+            if tip_set_diffs["in sequences"]:
+                warnings.warn(
+                    "\n".join(
+                        [
+                            "One or more you have added sequences are not represented in the initial tree you gave.",
+                            "These sequences will not be added to the xml being generated.",
+                            "Use method set_diffs_initial_tree_and_sequences to view these.",
+                        ]
+                    )
+                )
+                sequences = Reads(
+                    [
+                        sequence
+                        for sequence in self._sequences
+                        if sequence.id not in tip_set_diffs["in sequences"]
+                    ]
+                )
+                age_by_short_id = {
+                    key: age
+                    for key, age in self._age_by_short_id.items()
+                    if key not in tip_set_diffs["in sequences"]
+                }
+
+            initial_tree_nodes = self._tree.findall("./run/init")
+            if len(initial_tree_nodes) == 0:
+                raise ValueError("Template has no initial tree.")
+            if len(initial_tree_nodes) > 1:
+                raise ValueError(
+                    "More than one intial tree is in the template xml BEAST2-xml only supports template xmls with one initial tree."
+                )
+            elements["run"].remove(initial_tree_nodes[0])
+            newick_tree = self._initial_phylo_tree.write(
+                format=self._initial_phylo_tree_format
+            )
+            replacement = ET.SubElement(
+                elements["run"],
+                "init",
+                spec="beast.util.TreeParser",
+                id="NewickTree.t:" + data_id,
+                initial="@Tree.t:" + data_id,
+                taxa="@" + data_id,
+                IsLabelledNewick="true",
+                adjustTipHeights="false",
+                newick=newick_tree,
+            )
+
         # Add in all sequences.
         for sequence in sorted(
-            self._sequences
+            sequences
         ):  # Sorting adds the sequences alphabetically like in BEAUti.
             seq_id = sequence.id
             short_id = seq_id.split()[0]
@@ -381,7 +438,7 @@ class BEAST2XML(object):
             )
 
         trait_order = [
-            sequence.id.split()[0] for sequence in self._sequences
+            sequence.id.split()[0] for sequence in sequences
         ]  # ensures order is the same as BEAUti's.
         trait_text = [
             short_id + "=" + str(age_by_short_id[short_id]) for short_id in trait_order
@@ -478,7 +535,7 @@ class BEAST2XML(object):
             Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
         tree_log_every: int, default=None
-            Specifying how often to write to the tree log file. If None, the value in the
+            Specifying how often to write to the file_path log file. If None, the value in the
             template will be retained.
         screen_log_every: int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
@@ -495,7 +552,7 @@ class BEAST2XML(object):
 
         Returns
         -------
-        tree: str
+        file_path: str
             String representation of xml.etree.ElementTree for running on BEAST
         """
         tree = self._to_xml_tree(
@@ -555,7 +612,7 @@ class BEAST2XML(object):
             Specifying how often to write to the trace log file. If None, the value in the
             template will be retained.
         tree_log_every: int, default=None
-            Specifying how often to write to the tree log file. If None, the value in the
+            Specifying how often to write to the file_path log file. If None, the value in the
             template will be retained.
         screen_log_every: int, default=None
             Specifying how often to write to the terminal (screen) log. If None, the
@@ -859,3 +916,40 @@ class BEAST2XML(object):
         self.change_parameter_state_node(
             self._rate_change_to_param_dict[parameter], dimension=dimensions
         )
+
+    def add_initial_tree(self, file_path, format=1):
+        """
+        Add initial newick tree.
+
+        Parameters
+        ----------
+        file_path:  str
+            Path to the newick tree file.
+        format: int, default 1
+            Format of the newick tree file:
+                0	flexible with support values
+                1	flexible with internal node names
+                2	all branches + leaf names + internal supports
+                3	all branches + all names
+                4	leaf branches + leaf names
+                5	internal and leaf branches + leaf names
+                6	internal branches + leaf names
+                7	leaf branches + all names
+                8	all names
+                9	leaf names
+                100	topology only
+
+        Returns
+        -------
+        None
+        """
+        self._initial_phylo_tree = ete3.Tree(file_path, format=format)
+        self._initial_phylo_tree_format = format
+
+    def set_diffs_initial_tree_and_sequences(self):
+        tree_tips = set(self._initial_phylo_tree.get_leaf_names())
+        sequence_tips = set([sequence.id for sequence in self._sequences])
+        return {
+            "in initial tree": tree_tips - sequence_tips,
+            "in sequences": sequence_tips - tree_tips,
+        }
