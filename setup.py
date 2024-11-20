@@ -3,30 +3,14 @@
 from setuptools import setup
 
 
-# Modified from http://stackoverflow.com/questions/2058802/
-# how-can-i-get-the-version-defined-in-setup-py-setuptools-in-my-package
-def version():
-    import os
-    import re
-
-    init = os.path.join("beast2xml", "__init__.py")
-    with open(init) as fp:
-        initData = fp.read()
-    match = re.search(r"^__version__ = ['\"]([^'\"]+)['\"]", initData, re.M)
-    if match:
-        return match.group(1)
-    else:
-        raise RuntimeError("Unable to find version string in %r." % init)
-
-
 setup(
     name="beast2-xml",
-    version=version(),
+    version="1.3.0",
     packages=["beast2xml"],
     package_data={"beast2xml": ["templates/*.xml"]},
     url="https://github.com/acorg/beast2-xml",
     download_url="https://github.com/acorg/beast2-xml",
-    author="Terry Jones",
+    author="Terry Jonesl",
     author_email="tcj25@cam.ac.uk",
     keywords=["BEAST2", "XML"],
     classifiers=[
