@@ -31,8 +31,7 @@ setup(
     install_requires=[
         "dark-matter>=1.1.28",
         "pandas>=2.2.2",
-        "python=3.10",
-        "ete3",
-        "six",
+        "ete3>= 3.1.3",
+        "six>=1.16.0",
     ],
 )
