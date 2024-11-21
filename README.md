@@ -157,15 +157,34 @@ BEAUti does and so I have done the same.
 
 ## Generate BEAST2 XML in Python
 
-If you want to create BEAST2 XML from your own Python, you can use the
-`BEAST2XML` class defined in [beast2xml/beast2.py](beast2xml/beast2.py).
+If you want to create BEAST2 XML from your own template xml in Python, you can use the
+`BEAST2XML` class defined in [beast2xml/beast2.py](beast2xml/beast2.py), as shown below:
 
-The simplest possible usage is
 
+**Note Many of these methods as of version 1.3.2 are not available in command line usage.**
 ```python
-from beast2xml import BEAST2XML
+from beast2xml.beast2 import BEAST2XML
+from dark.fasta import FastaReads
+import pandas as pd
 
-print(BEAST2XML().to_string())
+temp_xml_file = 'template_BEAST2.xml' # Path to your template xml.
+temp_xml = BEAST2XML(template=temp_xml_file)
+
+fasta_alignment = 'alignment.fasta' # Path to your fasta file.
+temp_xml.add_sequences(fasta_alignment) # NOTE this replaces the sequences in the template BEAST2 xml.
+
+metadata_file = 'metatdata.csv' # Path to your age information. 
+temp_xml.add_ages(metadata_file, seperator=',', age_column="year_decimal")
+# NOTE currently only year decmals/fractions are accepted (NOT dates). 
+
+temp_xml.change_prior('origin', 'uniform', lower=0.5, start=1.5, upper=4, wild_card_ending=True)
+# This will search for any prior for a parameter whose name starts with origin and then change the prior.
+
+newick_tree = 'initial.newick'# Path to Newick file to be used as an initial tree.
+temp_xml.add_initial_tree(newick_tree)
+
+path_to_your_modified_xml = 'path_to_your_modified_xml.xml'
+temp_xml.to_xml(path_to_your_modified_xml)
 ```
 
 There are several options you can pass to the `BEAST2XML` constructor:
@@ -207,7 +226,7 @@ class BEAST2XML(object):
 and options you can pass to its `to_string` or `to_xml` methods:
 
 ```python
-    def to_string(self,
+def to_string(self,
                   chain_length=None,
                   default_age=0.0,
                   date_direction=None,
@@ -264,7 +283,7 @@ and options you can pass to its `to_string` or `to_xml` methods:
 ```
 
 ```python
-    def to_xml(self,
+def to_xml(self,
                path,
                chain_length=None,
                default_age=0.0,
