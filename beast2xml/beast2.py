@@ -13,7 +13,8 @@ import warnings
 
 from importlib.resources import files
 
-from dark.reads import Reads, FastaReads
+from dark.reads import Reads
+from dark.fasta import FastaReads
 import pandas as pd
 from copy import deepcopy
 
@@ -293,10 +294,6 @@ class BEAST2XML(object):
                     "If a string sequences must be a path to a fasta file or a dark.Reads object."
                 )
             sequences = FastaReads(sequences)
-        elif not isinstance(sequences, Reads):
-            raise ValueError(
-                "sequences must be a path to a fasta file or a dark.Reads object."
-            )
         for sequence in sequences:
             self.add_sequence(sequence)
 
