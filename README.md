@@ -1,7 +1,9 @@
 ## BEAST2 XML
 
 This is a first, and *very* simplistic, cut at generating BEAST2 XML from
-Python (2.7, and 3.5 to 3.10 are all known to work).
+Python (2.7, and 3.5 to 3.10 are all known to work). Installing BEAST2 XML 
+Python 3.12 has caused some issues on some HPCs/OS, suggest using python 3.10 (we
+have not had a chance to check python 3.11).
 
 BEAST2 is a complex program and so is its input XML.  People normally
 generate the input XML using a GUI tool,

@@ -926,7 +926,7 @@ class BEAST2XML(object):
             self._rate_change_to_param_dict[parameter], dimension=dimensions
         )
 
-    def add_initial_tree(self, file_path, format=1):
+    def add_initial_tree(self, file_path, format=1, replacement_for_zero_lengths=1e-7):
         """
         Add initial newick tree.
 
@@ -947,12 +947,21 @@ class BEAST2XML(object):
                 8	all names
                 9	leaf names
                 100	topology only
+        replacement_for_zero_lengths: float, default 1e-7
+            Replacement for zero branch lengths. Some BEAST2 packages do not like
+             zero valued branch lengths. This is not carried out if
+             replacement_for_zero_lengths = 0 or 0.0.
 
         Returns
         -------
         None
         """
-        self._initial_phylo_tree = ete3.Tree(file_path, format=format)
+        initial_phylo_tree = ete3.Tree(file_path, format=format)
+        if replacement_for_zero_lengths != 0:
+            for node in initial_phylo_tree.iter_descendants():
+                if node.dist == 0:
+                    node.dist = replacement_for_zero_lengths
+        self._initial_phylo_tree = initial_phylo_tree
         self._initial_phylo_tree_format = format
 
     def set_diffs_initial_tree_and_sequences(self):
