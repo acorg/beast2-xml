@@ -411,20 +411,17 @@ class BEAST2XML(object):
                 raise ValueError(
                     "More than one intial tree is in the template xml BEAST2-xml only supports template xmls with one initial tree."
                 )
-            elements["run"].remove(initial_tree_nodes[0])
-            newick_tree = self._initial_phylo_tree.write(
+            initial_tree_node = initial_tree_nodes[0]
+            delete_child_nodes(initial_tree_node)
+            del initial_tree_node.attrib["estimate"]
+            initial_tree_node.attrib["id"] = "NewickTree.t:" + data_id
+            initial_tree_node.attrib["spec"] = "beast.util.TreeParser"
+            initial_tree_node.attrib["_IsLabelledNewick"] = self._IsLabelledNewick
+            initial_tree_node.attrib["_adjustTipHeights"] = self._adjustTipHeights
+            initial_tree_node.attrib["initial"] = ("@Tree.t:" + data_id,)
+            initial_tree_node.attrib["taxa"] = "@" + data_id
+            initial_tree_node.attrib["newick"] = self._initial_phylo_tree.write(
                 format=self._initial_phylo_tree_format
-            )
-            replacement = ET.SubElement(
-                elements["run"],
-                "init",
-                spec="beast.util.TreeParser",
-                id="NewickTree.t:" + data_id,
-                initial="@Tree.t:" + data_id,
-                taxa="@" + data_id,
-                IsLabelledNewick="true",
-                adjustTipHeights="false",
-                newick=newick_tree,
             )
 
         # Add in all sequences.
@@ -926,7 +923,14 @@ class BEAST2XML(object):
             self._rate_change_to_param_dict[parameter], dimension=dimensions
         )
 
-    def add_initial_tree(self, file_path, format=1, replacement_for_zero_lengths=1e-7):
+    def add_initial_tree(
+        self,
+        file_path,
+        format=1,
+        replacement_for_zero_lengths=1e-7,
+        is_labelled_newick=True,
+        adjust_tip_heights=False,
+    ):
         """
         Add initial newick tree.
 
@@ -951,6 +955,19 @@ class BEAST2XML(object):
             Replacement for zero branch lengths. Some BEAST2 packages do not like
              zero valued branch lengths. This is not carried out if
              replacement_for_zero_lengths = 0 or 0.0.
+        is_labelled_newick: bool, default True
+            See Also: https://www.beast2.org/2014/07/28/all-about-starting-trees
+            Is the Newick tree labelled (alternatively contains node numbers)?  If
+            False then “offset="1" is the lowest taxa number. The default=1 but 0 is
+             common as well. Taxa numbers are as they are ordered in the alignment
+            referred to with the taxa attribute.
+        adjust_tip_heights: bool, default False
+            See Also: https://www.beast2.org/2014/07/28/all-about-starting-trees
+            If False tips will be initialised by the heights in the Newick tree. Threshold
+             specifies threshold under which node heights (derived from lengths) are set
+            to zero. This helps when there are numeric issues with adding the lengths.
+            If True tips will be set to zero, or if tip dates are specified to these
+            particular tip dates
 
         Returns
         -------
@@ -963,6 +980,8 @@ class BEAST2XML(object):
                     node.dist = replacement_for_zero_lengths
         self._initial_phylo_tree = initial_phylo_tree
         self._initial_phylo_tree_format = format
+        self._IsLabelledNewick = str(is_labelled_newick).lower()
+        self._adjustTipHeights = str(adjust_tip_heights).lower()
 
     def set_diffs_initial_tree_and_sequences(self):
         tree_tips = set(self._initial_phylo_tree.get_leaf_names())
