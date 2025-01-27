@@ -416,9 +416,9 @@ class BEAST2XML(object):
             del initial_tree_node.attrib["estimate"]
             initial_tree_node.attrib["id"] = "NewickTree.t:" + data_id
             initial_tree_node.attrib["spec"] = "beast.util.TreeParser"
-            initial_tree_node.attrib["_IsLabelledNewick"] = self._IsLabelledNewick
-            initial_tree_node.attrib["_adjustTipHeights"] = self._adjustTipHeights
-            initial_tree_node.attrib["initial"] = ("@Tree.t:" + data_id,)
+            initial_tree_node.attrib["IsLabelledNewick"] = self._IsLabelledNewick
+            initial_tree_node.attrib["adjustTipHeights"] = self._adjustTipHeights
+            initial_tree_node.attrib["initial"] = "@Tree.t:" + data_id
             initial_tree_node.attrib["taxa"] = "@" + data_id
             initial_tree_node.attrib["newick"] = self._initial_phylo_tree.write(
                 format=self._initial_phylo_tree_format
