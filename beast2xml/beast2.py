@@ -380,6 +380,7 @@ class BEAST2XML(object):
             if tip_set_diffs["in initial tree"]:
                 raise ValueError(
                     "Initial tree has additional sequences to the ones you have added."
+                    + "\nUse method set_diffs_initial_tree_and_sequences to view these."
                 )
             if tip_set_diffs["in sequences"]:
                 warnings.warn(
