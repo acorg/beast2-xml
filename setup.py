@@ -5,12 +5,12 @@ from setuptools import setup
 
 setup(
     name="beast2-xml",
-    version="1.3.3",
+    version="1.3.4",
     packages=["beast2xml"],
     package_data={"beast2xml": ["templates/*.xml"]},
     url="https://github.com/acorg/beast2-xml",
     download_url="https://github.com/acorg/beast2-xml",
-    author="Terry Jonesl",
+    author="Terry Jones",
     author_email="tcj25@cam.ac.uk",
     keywords=["BEAST2", "XML"],
     classifiers=[

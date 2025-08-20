@@ -913,6 +913,7 @@ class BEAST2XML(object):
             del parameter_element  # delete old parameter element_path if it exists.
         if not any(time == 0.0 for time in times):
             times.append(0.0)
+        times = sorted(times)
         dimensions = len(times)
         ET.SubElement(
             skyline_element,
