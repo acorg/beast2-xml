@@ -870,6 +870,12 @@ class BEAST2XML(object):
         times : iterable of floats
             Times of changes.
 
+        Notes
+        -------
+        If modifying see:
+         *  https://github.com/BEAST2-Dev/bdsky/blob/master/doc/how_to.pdf
+         *  https://github.com/BEAST2-Dev/bdsky/issues/35
+
         """
         skyline_element = self._tree.find(
             "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']"
@@ -913,7 +919,7 @@ class BEAST2XML(object):
             del parameter_element  # delete old parameter element_path if it exists.
         if not any(time == 0.0 for time in times):
             times.append(0.0)
-        times = sorted(times)
+        times = sorted(times, reverse=True)
         dimensions = len(times)
         ET.SubElement(
             skyline_element,
