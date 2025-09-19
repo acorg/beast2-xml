@@ -453,7 +453,11 @@ class BEAST2XML(object):
         if date_direction is None:
             trait.set(
                 "value", ",".join(trait_text)
-            )  # Replaces old age info with new age info
+            )  # Replaces old age info with new age info if in value attribute
+            if hasattr(trait, "text"):
+                trait.text = ''
+            if 'dateFormat' in trait.attrib:
+                del trait.attrib['dateFormat']
             if trait.get("traitname") is None:
                 raise ValueError(
                     "No traitname attribute in dateTrait element_path of template xml."
