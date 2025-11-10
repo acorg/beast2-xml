@@ -32,6 +32,8 @@ def delete_child_nodes(node):
     for child in list(node):
         node.remove(child)
 
+def _two_df_cols_to_dict(df, key, value):
+    return df[[key, value]].set_index(key).to_dict()[value]
 
 class BEAST2XML(object):
     """
@@ -155,6 +157,37 @@ class BEAST2XML(object):
             result[tag] = element
 
         return result
+
+    def add_dates(self, date_data, seperator="\t", sample_id_field='strain', collection_date_field='date'):
+        """
+        Add date data (converting it to year decimals beforehand).
+
+        Parameters
+        ----------
+        date_data : pandas.DataFrame, str
+            Must be a string path to pandas.DataFrame or pandas.DataFrame containing date data.
+        seperator : str, default="\t"
+            Seperator between date columns.
+        sample_id_field: str, default="strain"
+            Sample ID column.
+        collection_date_field: str, default="date"
+            Collection date column.
+
+        Returns
+        -------
+        None
+        """
+        if isinstance(date_data, str):
+            date_data = pd.read_csv(date_data, sep=seperator, parse_dates=[collection_date_field])
+        if isinstance(date_data, pd.DataFrame):
+            date_data = _two_df_cols_to_dict(date_data, sample_id_field, collection_date_field)
+        else:
+            raise ValueError("date_data must be a string or pandas.DataFrame")
+        year_decimal_data = {id: date_to_decimal(date) for id, date in date_data.items()}
+        self.add_dates(year_decimal_data)
+
+
+
 
     def add_ages(self, age_data, seperator="\t", age_column="year_decimal"):
         """

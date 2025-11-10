@@ -46,13 +46,15 @@ def date_to_decimal(date):
 
     Parameters
     ----------
-    date: datetime.date or datetime.datetime
+    date: datetime.date, datetime.datetime or string of format YYYY-MM-DD
         Date to be converted.
 
     Returns
     -------
     date_as_year_decimal : float
     """
+    if isinstance(date, str):
+        date = datetime.strptime(date, "%Y-%m-%d")
     year = date.year
     start_of_this_year = dt(year=year, month=1, day=1)
     start_of_next_year = dt(year=year + 1, month=1, day=1)
