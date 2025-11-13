@@ -1,0 +1,55 @@
+Correlation Coefficient (rho or r): !!python/object/apply:numpy.core.multiarray.scalar
+- &id001 !!python/object/apply:numpy.dtype
+  args:
+  - f8
+  - false
+  - true
+  state: !!python/tuple
+  - 3
+  - <
+  - null
+  - null
+  - null
+  - -1
+  - -1
+  - 0
+- !!binary |
+  cLiX2ttxvD8=
+R^2 value: !!python/object/apply:numpy.core.multiarray.scalar
+- *id001
+- !!binary |
+  HNAn3dVIiT8=
+TMRCA root (date): 23-03-20
+TMRCA root (year decimal): !!python/object/apply:numpy.core.multiarray.scalar
+- *id001
+- !!binary |
+  3fVt39qcn0A=
+chisq: !!python/object/apply:numpy.core.multiarray.scalar
+- *id001
+- !!binary |
+  c8pjw51Yvj4=
+hessian: !!python/object/apply:numpy.core.multiarray._reconstruct
+  args:
+  - !!python/name:numpy.ndarray ''
+  - !!python/tuple
+    - 0
+  - !!binary |
+    Yg==
+  state: !!python/tuple
+  - 1
+  - !!python/tuple
+    - 2
+    - 2
+  - *id001
+  - false
+  - !!binary |
+    Uv+RcOGE7kH6jLMA4+E+QfqMswDj4T5BAAAAAABAj0A=
+intercept: !!python/object/apply:numpy.core.multiarray.scalar
+- *id001
+- !!binary |
+  U792d7VX3r8=
+slope: !!python/object/apply:numpy.core.multiarray.scalar
+- *id001
+- !!binary |
+  Z/ii2962Lj8=
+valid_confidence: false
