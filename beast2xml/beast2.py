@@ -1038,7 +1038,7 @@ class BEAST2XML(object):
         wild_card_ending: bool, default True
             Whether to include wild card endings.
         values: list of floats/ints, default [0]
-            Values to fix to
+            Values to fix to.
         """
         parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
         del parameter_state_node.attrib["dimension"]
@@ -1064,7 +1064,8 @@ class BEAST2XML(object):
         """
          BROKEN
         Tried to go off https://groups.google.com/g/beast-users/c/JW9MGdQzSlc/m/cr85EAzjDAAJ
-        This seems to be missing an element of the xml to alter. BEAST still seems to modify the fixed value.
+        This seems to be missing altering an element of the xml. The initial value is changed but BEAST still seems to modify the fixed value.
+        ---- actual docstring ------
         Fix dimension values for a parameter.
 
         Parameters
