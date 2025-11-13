@@ -994,6 +994,7 @@ class BEAST2XML(object):
         self.change_parameter_state_node(
             self._rate_change_to_param_dict[parameter], dimension=dimensions
         )
+
     def _begin_fix_dimension_values(self, parameter, wild_card_ending=True):
         if parameter.startswith("reproductiveNumber"):
             if self.a_birth_rate_has_been_fixed:
