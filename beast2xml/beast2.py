@@ -118,6 +118,10 @@ class BEAST2XML(object):
         self._age_by_short_id = {}
         self._date_unit = date_unit
         self._initial_phylo_tree = None
+        self.a_birth_rate_has_been_fixed = False
+        self.a_death_rate_has_been_fixed = False
+        self.a_sampling_rate_has_been_fixed = False
+
 
     @staticmethod
     def find_elements(tree):
@@ -692,7 +696,7 @@ class BEAST2XML(object):
         )
         tree.write(path, "unicode" if six.PY3 else "utf-8", xml_declaration=True)
 
-    def _search_for_parameter_in_element(
+    def _search_for_id_in_element(
         self, element_path, parameter, wild_card_ending
     ):
         if wild_card_ending:
@@ -703,7 +707,7 @@ class BEAST2XML(object):
             ]
         else:
             parameter_nodes = self._tree.findall(
-                "./run/state/parameter[@id='%s']" % parameter
+                f"{element_path}[@id='%s']" % parameter
             )
         if len(parameter_nodes) == 0:
             raise ValueError(
@@ -749,7 +753,7 @@ class BEAST2XML(object):
                 "Either a value, dimension, lower or upper argument must be provided."
             )
 
-        parameter_node = self._search_for_parameter_in_element(
+        parameter_node = self._search_for_id_in_element(
             "./run/state/parameter", parameter, wild_card_ending
         )
         if value is not None:
@@ -757,7 +761,15 @@ class BEAST2XML(object):
         if dimension is not None:
             if not isinstance(dimension, int):
                 raise ValueError("Dimension must be an integer.")
+            if parameter == "birthRateChangeTimes" and self.a_birth_rate_has_been_fixed:
+                raise AssertionError(
+                        'A birth rate value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
+            if parameter == "deathRateChangeTimes" and self.a_death_rate_has_been_fixed:
+                raise AssertionError('A death rate value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
+            if parameter == "samplingRateChangeTimes" and self.a_sampling_rate_has_been_fixed:
+               raise AssertionError('A sampling rate value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
             parameter_node.set("dimension", str(dimension))
+
         if lower is not None:
             parameter_node.set("lower", str(lower))
         if upper is not None:
@@ -779,7 +791,7 @@ class BEAST2XML(object):
             Keyword arguments parameterising the distribution.
 
         """
-        parameter_node = self._search_for_parameter_in_element(
+        parameter_prior_node = self._search_for_id_in_element(
             "./run/distribution/distribution/prior", parameter, wild_card_ending
         )
 
@@ -858,7 +870,7 @@ class BEAST2XML(object):
                     )
         kwargs = {key: str(value) for key, value in kwargs.items()}
 
-        delete_child_nodes(parameter_node)
+        delete_child_nodes(parameter_prior_node)
         i_d = "_".join([parameter, distribution])
         if distribution == "Uniform":
             self.change_parameter_state_node(
@@ -867,14 +879,14 @@ class BEAST2XML(object):
 
         if distribution in ["Poisson", "WeibullDistribution"]:
             ET.SubElement(
-                parameter_node,
+                parameter_prior_node,
                 "distr",
                 id=i_d,
                 spec="beast.math.distributions." + distribution,
                 **kwargs,
             )
         else:
-            ET.SubElement(parameter_node, distribution, id=i_d, name="distr", **kwargs)
+            ET.SubElement(parameter_prior_node, distribution, id=i_d, name="distr", **kwargs)
 
     def add_rate_change_dates(self, parameter, dates):
         """
@@ -926,15 +938,27 @@ class BEAST2XML(object):
         if rev_time_element is None:
             rev_time_array = [False, False, False, False, False]
         else:
-            rev_time_array = rev_time_element.text
+            if rev_time_element.text is not None:
+                if 'value' in rev_time_element.attrib:
+                    raise AttributeError('XMLs reverse time element has both text and attrib["value"].')
+                rev_time_array = rev_time_element.text
+            elif 'value' in rev_time_element.attrib:
+                rev_time_array = rev_time_element.attrib['value']
+            else:
+                raise AttributeError('XMLs reverse time element needs text or attrib["value"].')
             rev_time_array = rev_time_array.split(" ")
             rev_time_array = [val in ["true", "True", "TRUE"] for val in rev_time_array]
-            del rev_time_element  # Delete existing rev_time_element.
         if parameter == "birthRateChangeTimes":
+            if self.a_birth_rate_has_been_fixed:
+                raise AssertionError('A birth rate value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
             rev_time_array[0] = True
         elif parameter == "deathRateChangeTimes":
+            if self.a_death_rate_has_been_fixed:
+                raise AssertionError('A death rate value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
             rev_time_array[1] = True
         elif parameter == "samplingRateChangeTimes":
+            if self.a_sampling_rate_has_been_fixed:
+                raise AssertionError('A sampling rate value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
             rev_time_array[2] = True
         else:
             raise ValueError(
@@ -945,18 +969,21 @@ class BEAST2XML(object):
             )
         rev_time_array = [str(val).lower() for val in rev_time_array]
         rev_time_array = " ".join(rev_time_array)
-        ET.SubElement(
-            skyline_element,
-            "reverseTimeArrays",
-            spec="beast.core.parameter.BooleanParameter",
-            value=rev_time_array,
-        )
+        if rev_time_element is None:
+            ET.SubElement(
+                skyline_element,
+                "reverseTimeArrays",
+                spec="beast.core.parameter.BooleanParameter",
+                value=rev_time_array,
+            )
+        else:
+            rev_time_element.attrib["value"] = rev_time_array
         parameter_element = skyline_element.find(parameter)
         if parameter_element is not None:
             del parameter_element  # delete old parameter element_path if it exists.
         if not any(time == 0.0 for time in times):
             times.append(0.0)
-        times = sorted(times, reverse=True)
+        times = sorted(times)
         dimensions = len(times)
         ET.SubElement(
             skyline_element,
@@ -967,6 +994,108 @@ class BEAST2XML(object):
         self.change_parameter_state_node(
             self._rate_change_to_param_dict[parameter], dimension=dimensions
         )
+
+    # def _begin_fix_dimension_values(self, parameter, wild_card_ending=True):
+    #     if parameter.startswith("reproductiveNumber"):
+    #         if self.a_birth_rate_has_been_fixed:
+    #             raise AssertionError('A birth rate (reproductiveNumber) value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
+    #         self.a_birth_rate_has_been_fixed = True
+    #     elif parameter == "becomeUninfectious":
+    #         if self.a_death_rate_has_been_fixed:
+    #             raise AssertionError('A death rate (becomeUninfectious) value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
+    #         self.a_death_rate_has_been_fixed = True
+    #     elif parameter == "samplingProportion":
+    #         if self.a_sampling_rate_has_been_fixed:
+    #             raise AssertionError('A sampling rate (samplingProportion) value has been fixed. Any changes to dimensions should be performed before any values are fixed.')
+    #         self.a_sampling_rate_has_been_fixed = True
+    #     else:
+    #         raise ValueError(
+    #             "Currently this method only supports the values reproductiveNumber, becomeUninfectious and samplingProportion for parameter."
+    #         )
+    #
+    #     parameter_state_node = self._search_for_id_in_element(
+    #         "./run/state/parameter", parameter, wild_card_ending
+    #     )
+    #     dims = int(parameter_state_node.get("dimension"))
+    #     start_value = parameter_state_node.text
+    #     start_values = [start_value] * dims
+    #     parameter_prior_node = self._search_for_id_in_element(
+    #             "./run/distribution/distribution/prior", parameter, wild_card_ending
+    #         )
+    #     return parameter_prior_node, parameter_state_node, dims, start_values
+    #
+    # def fix_first_few_dimension_values(self, parameter, wild_card_ending=True, values = [0]):
+    #     """
+    #     BROKEN
+    #     Tried to go off https://github.com/laduplessis/skylinetools/wiki/TreeSlicer%3A-Example-1
+    #     This seems to be missing altering an element of the xml. The initial value is changed but BEAST still seems to modify the fixed value.
+    #     ---- actual docstring ------
+    #     Fix first few dimension values for a parameter.
+    #
+    #     Parameters
+    #     ----------
+    #     parameter: str
+    #         The parameter to fix.
+    #     wild_card_ending: bool, default True
+    #         Whether to include wild card endings.
+    #     values: list of floats/ints, default [0]
+    #         Values to fix to.
+    #     """
+    #     parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
+    #     del parameter_state_node.attrib["dimension"]
+    #     del parameter_state_node.attrib['spec']
+    #     for index, value in enumerate(values):
+    #             start_values[index] = str(value)
+    #     parameter_state_node.text = " ".join(start_values)
+    #     parameter_id = parameter_state_node.attrib["id"]
+    #     slice_id = f'{parameter_id}Slice'
+    #     parameter_prior_node.attrib["x"] = f'@{slice_id}'
+    #     root = self._tree.getroot()
+    #     ET.SubElement(
+    #         root,
+    #         "function",
+    #         id=slice_id,
+    #         spec="beast.core.util.Slice",
+    #         arg=f'@{parameter_id}',
+    #         index=str(len(values)),
+    #         count=str(dims - len(values))
+    #     )
+    #
+    # def fix_dimension_values(self, parameter, wild_card_ending=True, indexed_and_values = {0: 0}):
+    #     """
+    #      BROKEN
+    #     Tried to go off https://groups.google.com/g/beast-users/c/JW9MGdQzSlc/m/cr85EAzjDAAJ
+    #     This seems to be missing altering an element of the xml. The initial value is changed but BEAST still seems to modify the fixed value.
+    #     ---- actual docstring ------
+    #     Fix dimension values for a parameter.
+    #
+    #     Parameters
+    #     ----------
+    #     parameter: str
+    #         The parameter to fix.
+    #     wild_card_ending: bool, default True
+    #         Whether to include wild card endings.
+    #     indexed_and_values : dict, default {0: 0}
+    #         The indexed and values to fix.
+    #
+    #     """
+    #     parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
+    #     del parameter_state_node.attrib['spec']
+    #     include_list = ['true'] * dims
+    #     for index, value in indexed_and_values.items():
+    #         if not isinstance(index, int):
+    #             raise TypeError('Index must be an integer.')
+    #         include_list[index] = 'false'
+    #         if not isinstance(value, (int, float)):
+    #             raise TypeError('Value must be an integer or float.')
+    #         if value == 0:
+    #             start_values[index] = '0.'
+    #         else:
+    #             start_values[index] = str(value)
+    #     parameter_state_node.text = " ".join(start_values)
+    #     parameter_prior_node.tag  = 'distribution'
+    #     parameter_prior_node.attrib['spec'] = "beast.math.distributions.ExcludablePrior"
+    #     parameter_prior_node.attrib['xInclude'] = " ".join(include_list)
 
     def add_initial_tree(
         self,
