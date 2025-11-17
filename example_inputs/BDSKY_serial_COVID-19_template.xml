@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood" required="" version="2.6">
+
+    <data id="alignment" spec="Alignment" name="alignment">
+</data>
+
+
+    
+
+<map name="Uniform" >beast.math.distributions.Uniform</map>
+<map name="Exponential" >beast.math.distributions.Exponential</map>
+<map name="LogNormal" >beast.math.distributions.LogNormalDistributionModel</map>
+<map name="Normal" >beast.math.distributions.Normal</map>
+<map name="Beta" >beast.math.distributions.Beta</map>
+<map name="Gamma" >beast.math.distributions.Gamma</map>
+<map name="LaplaceDistribution" >beast.math.distributions.LaplaceDistribution</map>
+<map name="prior" >beast.math.distributions.Prior</map>
+<map name="InverseGamma" >beast.math.distributions.InverseGamma</map>
+<map name="OneOnX" >beast.math.distributions.OneOnX</map>
+
+<run id="mcmc" spec="MCMC" chainLength="10000000" storeEvery="10000">
+    <state id="state" spec="State" storeEvery="10000">
+        <tree id="Tree.t:alignment" spec="beast.evolution.tree.Tree" name="stateNode">
+            <trait id="dateTrait.t:alignment" spec="beast.evolution.tree.TraitSet" traitname="date" value="">
+                <taxa id="TaxonSet.alignment" spec="TaxonSet">
+                    <alignment idref="alignment"/>
+                </taxa>
+            </trait>
+            <taxonset idref="TaxonSet.alignment"/>
+        </tree>
+        <parameter id="clockRate.c:alignment" spec="parameter.RealParameter" lower="0.0" name="stateNode">4.0E-4</parameter>
+        <parameter id="gammaShape.s:alignment" spec="parameter.RealParameter" name="stateNode">0.5</parameter>
+        <parameter id="kappa.s:alignment" spec="parameter.RealParameter" lower="0.0" name="stateNode">2.0</parameter>
+        <parameter id="origin_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" lower="0" name="stateNode" upper="6">6</parameter>
+        <parameter id="becomeUninfectiousRate_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="365.0">36.25</parameter>
+        <parameter id="reproductiveNumber_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" dimension="10" lower="0.0" name="stateNode" upper="15.0">2.0</parameter>
+        <parameter id="samplingProportion_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="1.0">0.01</parameter>
+        <parameter id="freqParameter.s:alignment" spec="parameter.RealParameter" dimension="4" lower="0.0" name="stateNode" upper="1.0">0.25</parameter>
+    </state>
+    <init id="RandomTree.t:alignment" spec="beast.evolution.tree.RandomTree" estimate="false" initial="@Tree.t:alignment" taxa="@alignment">
+        <populationModel id="ConstantPopulation0.t:alignment" spec="ConstantPopulation">
+            <parameter id="randomPopSize.t:alignment" spec="parameter.RealParameter" name="popSize">1.0</parameter>
+        </populationModel>
+    </init>
+    <distribution id="posterior" spec="util.CompoundDistribution">
+        <distribution id="prior" spec="util.CompoundDistribution">
+            <distribution id="BDSKY_Serial.t:alignment" spec="beast.evolution.speciation.BirthDeathSkylineModel" becomeUninfectiousRate="@becomeUninfectiousRate_BDSKY_Serial.t:alignment" origin="@origin_BDSKY_Serial.t:alignment" reproductiveNumber="@reproductiveNumber_BDSKY_Serial.t:alignment" samplingProportion="@samplingProportion_BDSKY_Serial.t:alignment" tree="@Tree.t:alignment"/>
+            <prior id="becomeUninfectiousRatePrior_BDSKY_Serial.t:alignment" name="distribution" x="@becomeUninfectiousRate_BDSKY_Serial.t:alignment">
+                <Gamma id="Gamma.0" name="distr">
+                    <parameter id="RealParameter.13" spec="parameter.RealParameter" estimate="false" name="alpha">5.921111111111111</parameter>
+                    <parameter id="RealParameter.14" spec="parameter.RealParameter" estimate="false" name="beta">12.32876712328767</parameter>
+                </Gamma>
+            </prior>
+            <prior id="ClockPrior.c:alignment" name="distribution" x="@clockRate.c:alignment">
+                <Gamma id="Gamma.13" name="distr">
+                    <parameter id="RealParameter.93" spec="parameter.RealParameter" estimate="false" name="alpha">1.7777777777777781</parameter>
+                    <parameter id="RealParameter.94" spec="parameter.RealParameter" estimate="false" name="beta">2.2499999999999994E-4</parameter>
+                </Gamma>
+            </prior>
+            <prior id="FrequenciesPrior.s:alignment" name="distribution" x="@freqParameter.s:alignment">
+                <Uniform id="Uniform.3" name="distr"/>
+            </prior>
+            <prior id="GammaShapePrior.s:alignment" name="distribution" x="@gammaShape.s:alignment">
+                <Exponential id="Exponential.0" name="distr">
+                    <parameter id="RealParameter.0" spec="parameter.RealParameter" estimate="false" name="mean">1.0</parameter>
+                </Exponential>
+            </prior>
+            <prior id="KappaPrior.s:alignment" name="distribution" x="@kappa.s:alignment">
+                <LogNormal id="LogNormalDistributionModel.0" name="distr">
+                    <parameter id="RealParameter.1" spec="parameter.RealParameter" estimate="false" name="M">1.0</parameter>
+                    <parameter id="RealParameter.2" spec="parameter.RealParameter" estimate="false" name="S">1.25</parameter>
+                </LogNormal>
+            </prior>
+            <prior id="originPrior_BDSKY_Serial.t:alignment" name="distribution" x="@origin_BDSKY_Serial.t:alignment">
+                <Uniform id="origin_Uniform" name="distr" lower="0" upper="6" offset="0.0" />
+            </prior>
+            <prior id="reproductiveNumberPrior_BDSKY_Serial.t:alignment" name="distribution" x="@reproductiveNumber_BDSKY_Serial.t:alignment">
+                <LogNormal id="LogNormalDistributionModel.2" name="distr">
+                    <parameter id="RealParameter.7" spec="parameter.RealParameter" estimate="false" name="M">1.0</parameter>
+                    <parameter id="RealParameter.8" spec="parameter.RealParameter" estimate="false" name="S">0.5</parameter>
+                </LogNormal>
+            </prior>
+            <prior id="samplingProportionPrior_BDSKY_Serial.t:alignment" name="distribution" x="@samplingProportion_BDSKY_Serial.t:alignment">
+                <Beta id="Beta.1" name="distr">
+                    <parameter id="RealParameter.9" spec="parameter.RealParameter" estimate="false" name="alpha">1.0</parameter>
+                    <parameter id="RealParameter.10" spec="parameter.RealParameter" estimate="false" name="beta">999.0</parameter>
+                </Beta>
+            </prior>
+        </distribution>
+        <distribution id="likelihood" spec="util.CompoundDistribution" useThreads="true">
+            <distribution id="treeLikelihood.alignment" spec="ThreadedTreeLikelihood" data="@alignment" tree="@Tree.t:alignment">
+                <siteModel id="SiteModel.s:alignment" spec="SiteModel" gammaCategoryCount="4" shape="@gammaShape.s:alignment">
+                    <parameter id="mutationRate.s:alignment" spec="parameter.RealParameter" estimate="false" name="mutationRate">1.0</parameter>
+                    <parameter id="proportionInvariant.s:alignment" spec="parameter.RealParameter" estimate="false" lower="0.0" name="proportionInvariant" upper="1.0">0.0</parameter>
+                    <substModel id="hky.s:alignment" spec="HKY" kappa="@kappa.s:alignment">
+                        <frequencies id="estimatedFreqs.s:alignment" spec="Frequencies" frequencies="@freqParameter.s:alignment"/>
+                    </substModel>
+                </siteModel>
+                <branchRateModel id="StrictClock.c:alignment" spec="beast.evolution.branchratemodel.StrictClockModel" clock.rate="@clockRate.c:alignment"/>
+            </distribution>
+        </distribution>
+    </distribution>
+    <operator id="StrictClockRateScaler.c:alignment" spec="ScaleOperator" parameter="@clockRate.c:alignment" weight="3.0"/>
+    <operator id="strictClockUpDownOperator.c:alignment" spec="UpDownOperator" scaleFactor="0.75" weight="3.0">
+        <up idref="clockRate.c:alignment"/>
+        <down idref="Tree.t:alignment"/>
+    </operator>
+    <operator id="gammaShapeScaler.s:alignment" spec="ScaleOperator" parameter="@gammaShape.s:alignment" scaleFactor="0.5" weight="0.1"/>
+    <operator id="KappaScaler.s:alignment" spec="ScaleOperator" parameter="@kappa.s:alignment" scaleFactor="0.5" weight="0.1"/>
+    <operator id="BDSKY_SerialTreeScaler.t:alignment" spec="ScaleOperator" scaleFactor="0.5" tree="@Tree.t:alignment" weight="3.0"/>
+    <operator id="BDSKY_SerialTreeRootScaler.t:alignment" spec="ScaleOperator" rootOnly="true" scaleFactor="0.5" tree="@Tree.t:alignment" weight="3.0"/>
+    <operator id="BDSKY_SerialUniformOperator.t:alignment" spec="Uniform" tree="@Tree.t:alignment" weight="30.0"/>
+    <operator id="BDSKY_SerialSubtreeSlide.t:alignment" spec="SubtreeSlide" tree="@Tree.t:alignment" weight="15.0"/>
+    <operator id="BDSKY_SerialNarrow.t:alignment" spec="Exchange" tree="@Tree.t:alignment" weight="0.0"/>
+    <operator id="BDSKY_SerialWide.t:alignment" spec="Exchange" isNarrow="false" tree="@Tree.t:alignment" weight="3.0"/>
+    <operator id="BDSKY_SerialWilsonBalding.t:alignment" spec="WilsonBalding" tree="@Tree.t:alignment" weight="3.0"/>
+    <operator id="becomeUninfectiousRateScaler_BDSKY_Serial.t:alignment" spec="ScaleOperator" parameter="@becomeUninfectiousRate_BDSKY_Serial.t:alignment" weight="2.0"/>
+    <operator id="reproductiveNumberScaler_BDSKY_Serial.t:alignment" spec="ScaleOperator" parameter="@reproductiveNumber_BDSKY_Serial.t:alignment" weight="10.0"/>
+    <operator id="samplingProportionScaler_BDSKY_Serial.t:alignment" spec="ScaleOperator" parameter="@samplingProportion_BDSKY_Serial.t:alignment" weight="10.0"/>
+    <operator id="updownBD_BDSKY_Serial.t:alignment" spec="UpDownOperator" scaleFactor="0.75" weight="2.0">
+        <up idref="reproductiveNumber_BDSKY_Serial.t:alignment"/>
+        <down idref="becomeUninfectiousRate_BDSKY_Serial.t:alignment"/>
+    </operator>
+    <operator id="origScaler_BDSKY_Serial.t:alignment" spec="ScaleOperator" parameter="@origin_BDSKY_Serial.t:alignment" weight="1.0"/>
+    <operator id="FrequenciesExchanger.s:alignment" spec="DeltaExchangeOperator" delta="0.01" weight="0.1">
+        <parameter idref="freqParameter.s:alignment"/>
+    </operator>
+    <logger id="tracelog" spec="Logger" fileName="alignment.log" logEvery="10000" model="@posterior" sanitiseHeaders="true" sort="smart">
+        <log idref="posterior"/>
+        <log idref="likelihood"/>
+        <log idref="prior"/>
+        <log idref="treeLikelihood.alignment"/>
+        <log id="TreeHeight.t:alignment" spec="beast.evolution.tree.TreeHeightLogger" tree="@Tree.t:alignment"/>
+        <log idref="clockRate.c:alignment"/>
+        <log idref="gammaShape.s:alignment"/>
+        <log idref="kappa.s:alignment"/>
+        <log idref="BDSKY_Serial.t:alignment"/>
+        <log idref="origin_BDSKY_Serial.t:alignment"/>
+        <log idref="becomeUninfectiousRate_BDSKY_Serial.t:alignment"/>
+        <log idref="reproductiveNumber_BDSKY_Serial.t:alignment"/>
+        <log idref="samplingProportion_BDSKY_Serial.t:alignment"/>
+        <log idref="freqParameter.s:alignment"/>
+    </logger>
+    <logger id="screenlog" spec="Logger" logEvery="10000">
+        <log idref="posterior"/>
+        <log idref="likelihood"/>
+        <log idref="prior"/>
+    </logger>
+    <logger id="treelog.t:alignment" spec="Logger" fileName="$(tree).trees" logEvery="10000" mode="tree">
+        <log id="TreeWithMetaDataLogger.t:alignment" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:alignment"/>
+    </logger>
+    <operatorschedule id="OperatorSchedule" spec="OperatorSchedule"/>
+</run>
+</beast>
