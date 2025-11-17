@@ -188,10 +188,7 @@ class BEAST2XML(object):
         else:
             raise ValueError("date_data must be a string or pandas.DataFrame")
         year_decimal_data = {id: date_to_decimal(date) for id, date in date_data.items()}
-        self.add_dates(year_decimal_data)
-
-
-
+        self.add_ages(year_decimal_data)
 
     def add_ages(self, age_data, seperator="\t", age_column="year_decimal"):
         """
