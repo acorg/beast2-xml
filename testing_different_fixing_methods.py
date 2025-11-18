@@ -21,8 +21,8 @@ trace_log_every = 500
 tree_log_every = 500
 save_dir = "output_xmls"
 sampling_prop_change_dates = ["2023-10-09"]
-fasta_path = "example_inputs/VirusSeq_JN1_alignment.fasta"
-metadata_path = "example_inputs/VirusSeq_JN1_metadata.csv"
+fasta_path = 'example_inputs/sequences.fasta'
+metadata_path = 'example_inputs/metadata.csv'
 
 
 #%% md
@@ -54,10 +54,7 @@ methods = ["Slice", 'ExcludablePrior']
 for value in [0, 0.000001]:
     for method in methods:
         beast2xml_copy = deepcopy(beast2xml)
-        if method == "Slice":
-            beast2xml_copy.fix_first_few_dimension_values(parameter='samplingProportion', values=[value])
-        if method == "ExcludablePrior":
-            beast2xml_copy.fix_dimension_values(parameter='samplingProportion', indexed_and_values = {0: value})
+        beast2xml_copy.fix_dimension_values(parameter='samplingProportion', indexed_and_values = {0: value})
         beast2xml_copy.to_xml(
             f'{save_dir}/{method}_fixed_at_{str(value)}.xml',
             chain_length=chain_length,
