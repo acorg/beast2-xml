@@ -35,6 +35,29 @@ def delete_child_nodes(node):
 def _two_df_cols_to_dict(df, key, value):
     return df[[key, value]].set_index(key).to_dict()[value]
 
+def get_indexes_of_attribute(et_element, attribute, value):
+    """
+    Get indexes of xml elements with specific value for an attribute.
+
+    Parameters
+    ----------
+    et_element: xml.etree.ElementTree.Element
+    attribute: str
+        Attribute name.
+    value: str
+        Attribute value.
+
+    Returns
+    -------
+    list of ints
+    """
+    indexes = [
+        index
+        for index, sub_element in enumerate(et_element.iter())
+        if attribute in sub_element.attrib and sub_element.attrib[attribute] == value
+    ]
+    return indexes
+
 class BEAST2XML(object):
     """
     Create BEAST2 XML instance.
@@ -1023,10 +1046,6 @@ class BEAST2XML(object):
 
     def fix_first_few_dimension_values(self, parameter, wild_card_ending=True, values = [0]):
         """
-        BROKEN
-        Tried to go off https://github.com/laduplessis/skylinetools/wiki/TreeSlicer%3A-Example-1
-        This seems to be missing altering an element of the xml. The initial value is changed but BEAST still seems to modify the fixed value.
-        ---- actual docstring ------
         Fix first few dimension values for a parameter.
 
         Parameters
@@ -1037,6 +1056,10 @@ class BEAST2XML(object):
             Whether to include wild card endings.
         values: list of floats/ints, default [0]
             Values to fix to.
+
+        Notes
+        -------
+        Method inspired by https://github.com/laduplessis/skylinetools/wiki/TreeSlicer%3A-Example-1
         """
         parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
         del parameter_state_node.attrib["dimension"]
@@ -1048,8 +1071,7 @@ class BEAST2XML(object):
         slice_id = f'{parameter_id}Slice'
         parameter_prior_node.attrib["x"] = f'@{slice_id}'
         root = self._tree.getroot()
-        ET.SubElement(
-            root,
+        slice_function = ET.Element(
             "function",
             id=slice_id,
             spec="beast.core.util.Slice",
@@ -1057,6 +1079,10 @@ class BEAST2XML(object):
             index=str(len(values)),
             count=str(dims - len(values))
         )
+        # This slice_function then needs to be inserted before the mcmc object.
+        # ET.SubElement always places new subelements at the end.
+        mcmc_index = get_indexes_of_attribute(root, 'id', 'mcmc')[0]
+        root.insert(mcmc_index-1, slice_function)
 
     def fix_dimension_values(self, parameter, wild_card_ending=True, indexed_and_values = {0: 0}):
         """
