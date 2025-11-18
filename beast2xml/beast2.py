@@ -1084,38 +1084,38 @@ class BEAST2XML(object):
         mcmc_index = get_indexes_of_attribute(root, 'id', 'mcmc')[0]
         root.insert(mcmc_index-1, slice_function)
 
-    def fix_dimension_values(self, parameter, wild_card_ending=True, indexed_and_values = {0: 0}):
-        """
-         BROKEN
-        Tried to go off https://groups.google.com/g/beast-users/c/JW9MGdQzSlc/m/cr85EAzjDAAJ
-        This seems to be missing altering an element of the xml. The initial value is changed but BEAST still seems to modify the fixed value.
-        ---- actual docstring ------
-        Fix dimension values for a parameter.
-
-        Parameters
-        ----------
-        parameter: str
-            The parameter to fix.
-        wild_card_ending: bool, default True
-            Whether to include wild card endings.
-        indexed_and_values : dict, default {0: 0}
-            The indexed and values to fix.
-
-        """
-        parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
-        del parameter_state_node.attrib['spec']
-        include_list = ['true'] * dims
-        for index, value in indexed_and_values.items():
-            if not isinstance(index, int):
-                raise TypeError('Index must be an integer.')
-            include_list[index] = 'false'
-            if not isinstance(value, (int, float)):
-                raise TypeError('Value must be an integer or float.')
-            start_values[index] = str(value)
-        parameter_state_node.text = " ".join(start_values)
-        parameter_prior_node.tag  = 'distribution'
-        parameter_prior_node.attrib['spec'] = "beast.math.distributions.ExcludablePrior"
-        parameter_prior_node.attrib['xInclude'] = " ".join(include_list)
+    # def fix_dimension_values(self, parameter, wild_card_ending=True, indexed_and_values = {0: 0}):
+    #     """
+    #      BROKEN
+    #     Tried to go off https://groups.google.com/g/beast-users/c/JW9MGdQzSlc/m/cr85EAzjDAAJ
+    #     This seems to be missing altering an element of the xml. The initial value is changed but BEAST still seems to modify the fixed value.
+    #     ---- actual docstring ------
+    #     Fix dimension values for a parameter.
+    #
+    #     Parameters
+    #     ----------
+    #     parameter: str
+    #         The parameter to fix.
+    #     wild_card_ending: bool, default True
+    #         Whether to include wild card endings.
+    #     indexed_and_values : dict, default {0: 0}
+    #         The indexed and values to fix.
+    #
+    #     """
+    #     parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
+    #     del parameter_state_node.attrib['spec']
+    #     include_list = ['true'] * dims
+    #     for index, value in indexed_and_values.items():
+    #         if not isinstance(index, int):
+    #             raise TypeError('Index must be an integer.')
+    #         include_list[index] = 'false'
+    #         if not isinstance(value, (int, float)):
+    #             raise TypeError('Value must be an integer or float.')
+    #         start_values[index] = str(value)
+    #     parameter_state_node.text = " ".join(start_values)
+    #     parameter_prior_node.tag  = 'distribution'
+    #     parameter_prior_node.attrib['spec'] = "beast.math.distributions.ExcludablePrior"
+    #     parameter_prior_node.attrib['xInclude'] = " ".join(include_list)
 
     def add_initial_tree(
         self,
