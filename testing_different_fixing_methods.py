@@ -21,46 +21,55 @@ trace_log_every = 500
 tree_log_every = 500
 save_dir = "output_xmls"
 sampling_prop_change_dates = ["2023-10-09"]
-fasta_path = 'example_inputs/sequences.fasta'
-metadata_path = 'example_inputs/metadata.csv'
 
 
 #%% md
 # ## Generating the BEAST2 xmls.
 #%%
-if metadata_path.endswith('.tsv'):
-    delimiter = '\t'
-elif metadata_path.endswith('.csv'):
-    delimiter = ','
-else:
-    raise TypeError(
-        f"metadata_path must be a csv or tsv file, ending with the appropriate file extension. Value given is {metadata_path}")
-metadata_df = pd.read_csv(metadata_path, parse_dates=[collection_date_field], sep=delimiter)
-metadata_df['year_decimal'] = metadata_df[collection_date_field].map(date_to_decimal)
-beast2xml = BEAST2XML(template=template_xml_path)
-seqs = FastaReads([fasta_path])
-beast2xml.add_sequences(seqs)
-beast2xml.add_dates(date_data=metadata_path,
-                    seperator=delimiter,
-                    sample_id_field=sample_id_field,
-                    collection_date_field=collection_date_field)
+beast2xml_original = BEAST2XML(template=template_xml_path)
+#%% Our two methods
+methods = [
+    "Slice", # function fix_first_few_dimension_values using the Slice class in the xml.
+    'ExcludablePrior' # function fix_dimension_values using the ExcludablePrior class in the xml.
+]
+#%% Setting up the two data sets.
+states = ['working', 'not_working'] # I have two states that affect both data source and value
+data_uploads = {} # dictionary of beast2xml instances loaded with different data sources.
+for state in states:
+    beast2xml = deepcopy(beast2xml_original)
+    seqs = FastaReads([f'example_inputs/{state}_sequences.fasta'])
+    beast2xml.add_sequences(seqs)
+    beast2xml.add_dates(date_data=f'example_inputs/{state}_metadata.csv',
+                        seperator=',',
+                        sample_id_field=sample_id_field,
+                        collection_date_field=collection_date_field)
 
-beast2xml.add_rate_change_dates(
-        parameter="samplingRateChangeTimes",
-        dates=sampling_prop_change_dates)
+    beast2xml.add_rate_change_dates(
+            parameter="samplingRateChangeTimes",
+            dates=sampling_prop_change_dates)
+    data_uploads[state] = beast2xml
 
-methods = ["Slice", 'ExcludablePrior']
 
-for value in [0, 0.000001]:
-    for method in methods:
-        beast2xml_copy = deepcopy(beast2xml)
-        beast2xml_copy.fix_dimension_values(parameter='samplingProportion', indexed_and_values = {0: value})
-        beast2xml_copy.to_xml(
-            f'{save_dir}/{method}_fixed_at_{str(value)}.xml',
-            chain_length=chain_length,
-            log_file_basename=f'{method}_fixed_at_{str(value)}',
-            trace_log_every=trace_log_every,
-            tree_log_every=tree_log_every,
-            screen_log_every=screen_log_every,
-            store_state_every=store_state_every,
-        )
+#%% setting up the working and not working values to be fixed at.
+# Note wiht the 'not_working' value  BEAST2 still runs but the MCMC process changes the values
+values  = {'working': 0, 'not_working': 0.00001}
+
+#%% Finally generating the xmls for this factorial test.
+# With both methods the combination of working value bet not working data causes the xml to crash BEAST with -infinity likelihood error.
+for method in methods:
+    for value_type, value in values.items():
+        for data_type, beast2xml in data_uploads.items():
+            beast2xml = deepcopy(beast2xml)
+            if method == "Slice":
+                beast2xml.fix_first_few_dimension_values(parameter='samplingProportion', values = [value])
+            if method == "ExcludablePrior":
+                beast2xml.fix_dimension_values(parameter='samplingProportion', indexed_and_values = {0: value})
+            beast2xml.to_xml(
+                f'{save_dir}/{method}_data_{data_type}_value_{value_type}.xml',
+                chain_length=chain_length,
+                log_file_basename=f'{method}_data_{data_type}_value_{value_type}',
+                trace_log_every=trace_log_every,
+                tree_log_every=tree_log_every,
+                screen_log_every=screen_log_every,
+                store_state_every=store_state_every,
+            )

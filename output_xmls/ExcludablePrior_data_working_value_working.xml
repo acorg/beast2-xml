@@ -128,7 +128,7 @@
 			<parameter id="origin_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" lower="0" name="stateNode" upper="6">6</parameter>
 			<parameter id="becomeUninfectiousRate_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="365.0">36.25</parameter>
 			<parameter id="reproductiveNumber_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" dimension="10" lower="0.0" name="stateNode" upper="15.0">2.0</parameter>
-			<parameter id="samplingProportion_BDSKY_Serial.t:alignment" lower="0.0" name="stateNode" upper="1.0" dimension="2">1e-06 0.01</parameter>
+			<parameter id="samplingProportion_BDSKY_Serial.t:alignment" lower="0.0" name="stateNode" upper="1.0" dimension="2">0 0.01</parameter>
 			<parameter id="freqParameter.s:alignment" spec="parameter.RealParameter" dimension="4" lower="0.0" name="stateNode" upper="1.0">0.25</parameter>
 		</state>
 		<init id="RandomTree.t:alignment" spec="beast.evolution.tree.RandomTree" estimate="false" initial="@Tree.t:alignment" taxa="@alignment">
@@ -222,7 +222,7 @@
 		<operator id="FrequenciesExchanger.s:alignment" spec="DeltaExchangeOperator" delta="0.01" weight="0.1">
 			<parameter idref="freqParameter.s:alignment" />
 		</operator>
-		<logger id="tracelog" spec="Logger" fileName="ExcludablePrior_fixed_at_1e-06.log" logEvery="500" model="@posterior" sanitiseHeaders="true" sort="smart">
+		<logger id="tracelog" spec="Logger" fileName="ExcludablePrior_data_working_value_working.log" logEvery="500" model="@posterior" sanitiseHeaders="true" sort="smart">
 			<log idref="posterior" />
 			<log idref="likelihood" />
 			<log idref="prior" />
@@ -243,7 +243,7 @@
 			<log idref="likelihood" />
 			<log idref="prior" />
 		</logger>
-		<logger id="treelog.t:alignment" spec="Logger" fileName="ExcludablePrior_fixed_at_1e-06.trees" logEvery="500" mode="tree">
+		<logger id="treelog.t:alignment" spec="Logger" fileName="ExcludablePrior_data_working_value_working.trees" logEvery="500" mode="tree">
 			<log id="TreeWithMetaDataLogger.t:alignment" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:alignment" />
 		</logger>
 		<operatorschedule id="OperatorSchedule" spec="OperatorSchedule" />

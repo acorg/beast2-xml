@@ -112,6 +112,7 @@
 	<map name="prior">beast.math.distributions.Prior</map>
 	<map name="InverseGamma">beast.math.distributions.InverseGamma</map>
 	<map name="OneOnX">beast.math.distributions.OneOnX</map>
+	<function id="samplingProportion_BDSKY_Serial.t:alignmentSlice" spec="beast.core.util.Slice" arg="@samplingProportion_BDSKY_Serial.t:alignment" index="1" count="1" />
 	<run id="mcmc" spec="MCMC" chainLength="500000" storeEvery="500">
 		<state id="state" spec="State" storeEvery="10000">
 			<tree id="Tree.t:alignment" spec="beast.evolution.tree.Tree" name="stateNode">
@@ -128,7 +129,7 @@
 			<parameter id="origin_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" lower="0" name="stateNode" upper="6">6</parameter>
 			<parameter id="becomeUninfectiousRate_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="365.0">36.25</parameter>
 			<parameter id="reproductiveNumber_BDSKY_Serial.t:alignment" spec="parameter.RealParameter" dimension="10" lower="0.0" name="stateNode" upper="15.0">2.0</parameter>
-			<parameter id="samplingProportion_BDSKY_Serial.t:alignment" lower="0.0" name="stateNode" upper="1.0" dimension="2">1e-06 0.01</parameter>
+			<parameter id="samplingProportion_BDSKY_Serial.t:alignment" lower="0.0" name="stateNode" upper="1.0">1e-05 0.01</parameter>
 			<parameter id="freqParameter.s:alignment" spec="parameter.RealParameter" dimension="4" lower="0.0" name="stateNode" upper="1.0">0.25</parameter>
 		</state>
 		<init id="RandomTree.t:alignment" spec="beast.evolution.tree.RandomTree" estimate="false" initial="@Tree.t:alignment" taxa="@alignment">
@@ -177,12 +178,12 @@
 						<parameter id="RealParameter.8" spec="parameter.RealParameter" estimate="false" name="S">0.5</parameter>
 					</LogNormal>
 				</prior>
-				<distribution id="samplingProportionPrior_BDSKY_Serial.t:alignment" name="distribution" x="@samplingProportion_BDSKY_Serial.t:alignment" spec="beast.math.distributions.ExcludablePrior" xInclude="false true">
+				<prior id="samplingProportionPrior_BDSKY_Serial.t:alignment" name="distribution" x="@samplingProportion_BDSKY_Serial.t:alignmentSlice">
 					<Beta id="Beta.1" name="distr">
 						<parameter id="RealParameter.9" spec="parameter.RealParameter" estimate="false" name="alpha">1.0</parameter>
 						<parameter id="RealParameter.10" spec="parameter.RealParameter" estimate="false" name="beta">999.0</parameter>
 					</Beta>
-				</distribution>
+				</prior>
 			</distribution>
 			<distribution id="likelihood" spec="util.CompoundDistribution" useThreads="true">
 				<distribution id="treeLikelihood.alignment" spec="ThreadedTreeLikelihood" data="@alignment" tree="@Tree.t:alignment">
@@ -222,7 +223,7 @@
 		<operator id="FrequenciesExchanger.s:alignment" spec="DeltaExchangeOperator" delta="0.01" weight="0.1">
 			<parameter idref="freqParameter.s:alignment" />
 		</operator>
-		<logger id="tracelog" spec="Logger" fileName="Slice_fixed_at_1e-06.log" logEvery="500" model="@posterior" sanitiseHeaders="true" sort="smart">
+		<logger id="tracelog" spec="Logger" fileName="Slice_data_working_value_not_working.log" logEvery="500" model="@posterior" sanitiseHeaders="true" sort="smart">
 			<log idref="posterior" />
 			<log idref="likelihood" />
 			<log idref="prior" />
@@ -243,7 +244,7 @@
 			<log idref="likelihood" />
 			<log idref="prior" />
 		</logger>
-		<logger id="treelog.t:alignment" spec="Logger" fileName="Slice_fixed_at_1e-06.trees" logEvery="500" mode="tree">
+		<logger id="treelog.t:alignment" spec="Logger" fileName="Slice_data_working_value_not_working.trees" logEvery="500" mode="tree">
 			<log id="TreeWithMetaDataLogger.t:alignment" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:alignment" />
 		</logger>
 		<operatorschedule id="OperatorSchedule" spec="OperatorSchedule" />
