@@ -908,7 +908,7 @@ class BEAST2XML(object):
         else:
             ET.SubElement(parameter_prior_node, distribution, id=i_d, name="distr", **kwargs)
 
-    def add_rate_change_dates(self, parameter, dates):
+    def add_rate_change_dates(self, parameter, dates, offset_earliest=0):
         """
         Add specific dates for parameter changes in skyline models.
 
@@ -917,27 +917,34 @@ class BEAST2XML(object):
         parameter : str
             The name of the parameter.
         dates : list, tuple, pd.Series or pd.DatetimeIndex of dates
-
+        offset_earliest: float (default 0)
+            Year decimal ammount to subtract from the earliest date, after conversion
+            to year decimal. This ensures the first value of a sampling proportion
+            dimensions can be set to 0. Without such an offset BEAST can throw a
+            negative infinity error when the first sample occurs in a period expecting 0
+            sampling. Suggested value would be 1e-6.
         """
         if not isinstance(dates, (list, tuple, pd.Series, pd.DatetimeIndex)):
             raise TypeError(
                 "dates must be a list, tuple pandas.Series or pandas.DatetimeIndex."
             )
         year_decimals = [date_to_decimal(item) for item in dates]
+        index_of_min = year_decimals .index(min(year_decimals))
+        year_decimals[index_of_min] -= offset_earliest
         youngest_tip = max(self._age_by_short_id.values())
         times = [youngest_tip - year_decimal for year_decimal in year_decimals]
         self.add_rate_change_times(parameter, times)
 
     def add_rate_change_times(self, parameter, times):
         """
-        Add specific times for parameter changes in skyline models.
+        Add specific times (from the youngest sample) for parameter changes in skyline models.
 
         Parameters
         ----------
         parameter : str
             The name of the parameter.
         times : iterable of floats
-            Times of changes.
+            Times of changes going backwards from the youngest sample.
 
         Notes
         -------
@@ -1044,9 +1051,9 @@ class BEAST2XML(object):
             )
         return parameter_prior_node, parameter_state_node, dims, start_values
 
-    def fix_first_few_dimension_values(self, parameter, wild_card_ending=True, values = [0]):
+    def set_dimension_values_to_0(self, parameter, wild_card_ending=True, indexes=[0]):
         """
-        Fix first few dimension values for a parameter.
+        Fix dimension values for a parameter to 0.
 
         Parameters
         ----------
@@ -1054,64 +1061,18 @@ class BEAST2XML(object):
             The parameter to fix.
         wild_card_ending: bool, default True
             Whether to include wild card endings.
-        values: list of floats/ints, default [0]
-            Values to fix to.
-
-        Notes
-        -------
-        Method inspired by https://github.com/laduplessis/skylinetools/wiki/TreeSlicer%3A-Example-1
-        """
-        parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
-        del parameter_state_node.attrib["dimension"]
-        del parameter_state_node.attrib['spec']
-        for index, value in enumerate(values):
-                start_values[index] = str(value)
-        parameter_state_node.text = " ".join(start_values)
-        parameter_id = parameter_state_node.attrib["id"]
-        slice_id = f'{parameter_id}Slice'
-        parameter_prior_node.attrib["x"] = f'@{slice_id}'
-        root = self._tree.getroot()
-        slice_function = ET.Element(
-            "function",
-            id=slice_id,
-            spec="beast.core.util.Slice",
-            arg=f'@{parameter_id}',
-            index=str(len(values)),
-            count=str(dims - len(values))
-        )
-        # This slice_function then needs to be inserted before the mcmc object.
-        # ET.SubElement always places new subelements at the end.
-        mcmc_index = get_indexes_of_attribute(root, 'id', 'mcmc')[0]
-        root.insert(mcmc_index-1, slice_function)
-
-    def fix_dimension_values(self, parameter, wild_card_ending=True, indexed_and_values = {0: 0}):
-        """
-         BROKEN
-        Tried to go off https://groups.google.com/g/beast-users/c/JW9MGdQzSlc/m/cr85EAzjDAAJ
-        This seems to be missing altering an element of the xml. The initial value is changed but BEAST still seems to modify the fixed value.
-        ---- actual docstring ------
-        Fix dimension values for a parameter.
-
-        Parameters
-        ----------
-        parameter: str
-            The parameter to fix.
-        wild_card_ending: bool, default True
-            Whether to include wild card endings.
-        indexed_and_values : dict, default {0: 0}
-            The indexed and values to fix.
+        indexes : list, default [0]
+            The indexes of values to be fixed.
 
         """
         parameter_prior_node, parameter_state_node, dims, start_values = self._begin_fix_dimension_values(parameter, wild_card_ending)
         del parameter_state_node.attrib['spec']
         include_list = ['true'] * dims
-        for index, value in indexed_and_values.items():
+        for index in indexes:
             if not isinstance(index, int):
                 raise TypeError('Index must be an integer.')
             include_list[index] = 'false'
-            if not isinstance(value, (int, float)):
-                raise TypeError('Value must be an integer or float.')
-            start_values[index] = str(value)
+            start_values[index] = '0.0'
         parameter_state_node.text = " ".join(start_values)
         parameter_prior_node.tag  = 'distribution'
         parameter_prior_node.attrib['spec'] = "beast.math.distributions.ExcludablePrior"
