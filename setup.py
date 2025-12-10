@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name="beast2-xml",
-    version="1.4.1",
+    version="1.5.0",
     packages=["beast2xml"],
     package_data={"beast2xml": ["templates/*.xml"]},
     url="https://github.com/acorg/beast2-xml",
@@ -33,5 +33,6 @@ setup(
         "pandas>=2.2.2",
         "ete3>= 3.1.3",
         "six>=1.16.0",
+        "numpy>=1.10.0",
     ],
 )
