@@ -1,5 +1,4 @@
 from __future__ import print_function, division
-
 import os
 import re
 import six
@@ -8,15 +7,13 @@ from beast2xml.date_utilities import date_to_decimal
 import xml.etree.ElementTree as ET
 import xml
 import ete3
-
 import warnings
-
 from importlib.resources import files
-
 from dark.reads import Reads
 from dark.fasta import FastaReads
 import pandas as pd
 from copy import deepcopy
+import numpy as np
 
 
 def delete_child_nodes(node):
@@ -1145,3 +1142,65 @@ class BEAST2XML(object):
             "in initial tree": tree_tips - sequence_tips,
             "in sequences": sequence_tips - tree_tips,
         }
+
+    def extract_youngest_year_decimal(self):
+        """
+        Extract the youngest year decimal from xml.
+
+        Returns
+        -------
+        float
+        """
+        elements = self.find_elements(self._tree)
+        date_node = elements['./run/state/tree/trait']
+        if 'value' in date_node.attrib:
+            age_text = date_node.attrib['value']
+        else:
+            age_text = date_node.text
+        ages_df = pd.DataFrame.from_records(
+            [{'ID': age_text_unit.split('=')[0], 'age': age_text_unit.split('=')[1]} for age_text_unit in
+             age_text.split(',')],
+        )
+        try:
+            ages_df['age'] = pd.to_numeric(ages_df['age'], errors='raise')
+        except:
+            try:
+                ages_df['age'] = pd.to_datetime(ages_df['age'],format='mixed', errors='raise')
+                ages_df['age'] = ages_df['age'].map(date_to_decimal)
+            except:
+                raise ValueError('Could not convert age/date information in xml into a date or float')
+        return max(ages_df['age'])
+
+
+    def extract_rate_change_reverse_times(self, parameter):
+        """
+        Extract reverse times (from the youngest sample) for parameter changes in skyline models.
+
+        Parameters
+        ----------
+        parameter : str
+            The name of the parameter.
+
+        Returns
+        ---------
+        numpy.array
+        """
+        skyline_element = self._tree.find(
+            "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']"
+        )
+        if skyline_element is None:
+            raise ValueError(
+                "No distribution of spec BirthDeathSkylineModel was found."
+                + "Currently this method only supports Birth Death Skyline Models."
+            )
+        rev_time_element = skyline_element.find("reverseTimeArrays")
+        if rev_time_element is None:
+            raise ValueError('No reverseTimeArrays was found.')
+        parameter_element = skyline_element.find(parameter)
+        if parameter_element is None:
+            raise ValueError(f'No element was found for {parameter} in the xml.')
+        if 'value' in parameter_element.attrib:
+            text = parameter_element.attrib['value']
+        else:
+            text = parameter_element.text
+        return np.array([float(item) for item in text.split(' ')])
