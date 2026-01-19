@@ -86,7 +86,7 @@ class TestTemplate(TestCase):
         a ValueError when toString is called.
         """
         xml = BEAST2XML(template="filename")
-        error = r"^Could not find '\./run/state/tree/trait' tag in XML " r"template$"
+        error = r"^Could not find '\./run/state/\*/trait' tag in XML " r"template$"
         assertRaisesRegex(self, ValueError, error, xml.to_string)
 
     @patch(
@@ -228,7 +228,7 @@ class ClockModelMixin(object):
         self.assertIs(None, child.text)
 
         # The sequence id with the default age of 0.0 must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], "id1=0.0")
 
     def test_sequence_id_age_regex(self):
@@ -243,7 +243,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the default age of 0.0 must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], "id1_80_xxx=80.0")
 
     def test_sequence_id_age_regex_non_matching(self):
@@ -278,7 +278,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the passed default age must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], "id1_xxx=50")
 
     def test_one_sequence_with_date_regex_and_date_unit_in_years(self):
@@ -296,7 +296,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with an age of ~2 years must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         # Note that the following is not exact!
         trait_value = float(trait.attrib["value"].split("=")[1])
         self.assertAlmostEqual(trait_value, 1.97, places=1)
@@ -321,7 +321,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with an age of ~2 months must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         # Note that the following is not exact!
         trait_value = float(trait.attrib["value"].split("=")[1])
         self.assertAlmostEqual(trait_value, 1.9712, places=2)
@@ -344,7 +344,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with an age of 10 days must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], id_ + "=10.0")
         self.assertEqual("day", trait.get("units"))
 
@@ -359,7 +359,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the given age must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], "id1=44")
 
     def test_one_sequence_with_age_added_together(self):
@@ -373,7 +373,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the given age must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], "id1=44")
 
     def test_add_sequences(self):
@@ -415,7 +415,7 @@ class ClockModelMixin(object):
         self.assertIs(None, child.text)
 
         # The sequence ids with the default age of 0.0 must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], "id1=0.0,id2=0.0,id3=0.0")
 
     def test_chain_length(self):
@@ -437,7 +437,7 @@ class ClockModelMixin(object):
         elements = BEAST2XML.find_elements(tree)
 
         # The sequence id with the default age of 33.0 must be in the traits.
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(trait.attrib["value"], "id1=33.0")
 
     def test_log_file_base_name(self):
@@ -515,7 +515,7 @@ class ClockModelMixin(object):
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
 
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual("date-backward", trait.get("traitname"))
 
     def test_date_direction(self):
@@ -527,7 +527,7 @@ class ClockModelMixin(object):
         tree = ET.ElementTree(ET.fromstring(xml.to_string(date_direction="forward")))
         elements = BEAST2XML.find_elements(tree)
 
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual("date-forward", trait.get("traitname"))
 
     def test_no_date_unit(self):
@@ -539,7 +539,7 @@ class ClockModelMixin(object):
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
 
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual(None, trait.get("units"))
 
     def test_date_unit(self):
@@ -551,7 +551,7 @@ class ClockModelMixin(object):
         tree = ET.ElementTree(ET.fromstring(xml.to_string()))
         elements = BEAST2XML.find_elements(tree)
 
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
         self.assertEqual("day", trait.get("units"))
 
     def test_dont_mimic_beauti(self):
