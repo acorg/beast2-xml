@@ -166,7 +166,7 @@ class BEAST2XML(object):
         for tag in (
             "data",
             "run",
-            "./run/state/tree/trait",
+            "./run/state/*/trait",
             "./run/logger[@id='tracelog']",
             "./run/logger[@id='treelog.t:",
             "./run/logger[@id='screenlog']",
@@ -419,7 +419,7 @@ class BEAST2XML(object):
         data = elements["data"]
         data_id = data.get("id")
         tree_logger_key = "./run/logger[@id='treelog.t:" + data_id + "']"
-        trait = elements["./run/state/tree/trait"]
+        trait = elements["./run/state/*/trait"]
 
         # Delete any existing children of the data node.
         delete_child_nodes(data)
@@ -1143,16 +1143,9 @@ class BEAST2XML(object):
             "in sequences": sequence_tips - tree_tips,
         }
 
-    def extract_youngest_year_decimal(self):
-        """
-        Extract the youngest year decimal from xml.
-
-        Returns
-        -------
-        float
-        """
+    def extract_sequence_year_decimals(self):
         elements = self.find_elements(self._tree)
-        date_node = elements['./run/state/tree/trait']
+        date_node = elements['./run/state/*/trait']
         if 'value' in date_node.attrib:
             age_text = date_node.attrib['value']
         else:
@@ -1169,6 +1162,17 @@ class BEAST2XML(object):
                 ages_df['age'] = ages_df['age'].map(date_to_decimal)
             except:
                 raise ValueError('Could not convert age/date information in xml into a date or float')
+        return ages_df
+
+    def extract_youngest_year_decimal(self):
+        """
+        Extract the youngest year decimal from xml.
+
+        Returns
+        -------
+        float
+        """
+        ages_df = self.extract_sequence_year_decimals()
         return max(ages_df['age'])
 
 
