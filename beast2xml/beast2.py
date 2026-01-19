@@ -1144,6 +1144,13 @@ class BEAST2XML(object):
         }
 
     def extract_sequence_year_decimals(self):
+        """
+        Extract year decimals for each sequence in the xml.
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
         elements = self.find_elements(self._tree)
         date_node = elements['./run/state/*/trait']
         if 'value' in date_node.attrib:
