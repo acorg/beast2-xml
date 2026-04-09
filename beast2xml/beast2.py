@@ -461,14 +461,21 @@ class BEAST2XML(object):
 
             initial_tree_nodes = self._tree.findall("./run/init")
             if len(initial_tree_nodes) == 0:
-                raise ValueError("Template has no initial tree.")
-            if len(initial_tree_nodes) > 1:
-                raise ValueError(
-                    "More than one intial tree is in the template xml BEAST2-xml only supports template xmls with one initial tree."
-                )
-            initial_tree_node = initial_tree_nodes[0]
-            delete_child_nodes(initial_tree_node)
-            del initial_tree_node.attrib["estimate"]
+                run_node = self._tree.find("./run")
+                state_node = run_node.find("state")
+                initial_tree_node = ET.Element("init")
+                # Insert after <state>
+                state_index = list(run_node).index(state_node)
+                run_node.insert(state_index + 1, initial_tree_node)
+            else:
+                if len(initial_tree_nodes) > 1:
+                    raise ValueError(
+                        "More than one initial tree is in the template xml. BEAST2-xml only supports template xmls with one initial tree."
+                    )
+                initial_tree_node = initial_tree_nodes[0]
+                delete_child_nodes(initial_tree_node)
+                if "estimate" in initial_tree_node.attrib:
+                    del initial_tree_node.attrib["estimate"]
             initial_tree_node.attrib["id"] = "NewickTree.t:" + data_id
             initial_tree_node.attrib["spec"] = "beast.util.TreeParser"
             initial_tree_node.attrib["IsLabelledNewick"] = self._IsLabelledNewick
