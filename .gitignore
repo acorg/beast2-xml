@@ -9,3 +9,7 @@ build
 dist
 beast2_xml.egg-info
 
+.idea
+.vscode
+.pytest_cache
+.venv
