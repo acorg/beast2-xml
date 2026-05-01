@@ -122,6 +122,8 @@ class BEAST2XML(object):
             )
         else:
             self._tree = ET.parse(template)
+        self.beast_version = self._tree.getroot().attrib.get("version")
+
         if sequence_id_date_regex is None:
             self._sequence_id_date_regex = None
         else:
@@ -163,21 +165,23 @@ class BEAST2XML(object):
         """
         result = {}
         root = tree.getroot()
+        data_element = root.find("data")
+        if data_element is None:
+            raise ValueError("Could not find data tag in XML template.")
+        data_id = data_element.get("id")
+        result['data'] = data_element
         for tag in (
-            "data",
             "run",
             "./run/state/*/trait",
             "./run/logger[@id='tracelog']",
             "./run/logger[@id='treelog.t:",
-            "./run/logger[@id='screenlog']",
-        ):
+            "./run/logger[@id='screenlog']"):
             if tag == "./run/logger[@id='treelog.t:":
                 tag = tag + data_id + "']"
             element = root.find(tag)
             if element is None:
                 raise ValueError("Could not find %r tag in XML template" % tag)
-            if tag == "data":
-                data_id = element.get("id")
+               
             result[tag] = element
 
         return result
@@ -477,7 +481,11 @@ class BEAST2XML(object):
                 if "estimate" in initial_tree_node.attrib:
                     del initial_tree_node.attrib["estimate"]
             initial_tree_node.attrib["id"] = "NewickTree.t:" + data_id
-            initial_tree_node.attrib["spec"] = "beast.util.TreeParser"
+            if self.beast_version in ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]:
+                # As of BEAST 2.7.0 the TreeParser class was moved from beast.util to beast.base.evolution.tree.
+                initial_tree_node.attrib["spec"] = "beast.util.TreeParser"
+            else:
+                initial_tree_node.attrib["spec"] = "beast.base.evolution.tree.TreeParser"
             initial_tree_node.attrib["IsLabelledNewick"] = self._IsLabelledNewick
             initial_tree_node.attrib["adjustTipHeights"] = self._adjustTipHeights
             initial_tree_node.attrib["initial"] = "@Tree.t:" + data_id
@@ -957,9 +965,17 @@ class BEAST2XML(object):
          *  https://github.com/BEAST2-Dev/bdsky/issues/35
 
         """
-        skyline_element = self._tree.find(
-            "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']"
-        )
+        if self.beast_version in ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]:
+            # As of BEAST 2.7.0: 
+            # * the BirthDeathSkylineModel class was moved from beast.evolution.speciation to bdsky.evolution.speciation.
+            # * the BooleanParameter class moved from beast.core.parameter to beast.base.inference.parameter.
+            skyline_element = self._tree.find(
+            "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']")
+            rev_time_array_spec = "beast.core.parameter.BooleanParameter"
+        else:
+            skyline_element = self._tree.find(
+            "./run/distribution/distribution/distribution[@spec='bdsky.evolution.speciation.BirthDeathSkylineModel']")
+            rev_time_array_spec = "beast.base.inference.parameter.BooleanParameter"
         if skyline_element is None:
             raise ValueError(
                 "No distribution of spec BirthDeathSkylineModel was found."
@@ -1004,7 +1020,7 @@ class BEAST2XML(object):
             ET.SubElement(
                 skyline_element,
                 "reverseTimeArrays",
-                spec="beast.core.parameter.BooleanParameter",
+                spec=rev_time_array_spec,
                 value=rev_time_array,
             )
         else:
@@ -1079,7 +1095,11 @@ class BEAST2XML(object):
             start_values[index] = '0.0'
         parameter_state_node.text = " ".join(start_values)
         parameter_prior_node.tag  = 'distribution'
-        parameter_prior_node.attrib['spec'] = "beast.math.distributions.ExcludablePrior"
+        if self.beast_version in ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]:
+            # As of BEAST 2.7.0 the ExcludablePrior class was moved from beast.math.distributions to beastlabs.math.distributions
+            parameter_prior_node.attrib['spec'] = "beast.math.distributions.ExcludablePrior"
+        else:
+            parameter_prior_node.attrib['spec'] = "beastlabs.math.distributions.ExcludablePrior"
         parameter_prior_node.attrib['xInclude'] = " ".join(include_list)
 
     def add_initial_tree(

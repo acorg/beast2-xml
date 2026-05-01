@@ -53,7 +53,7 @@ class TestTemplate(TestCase):
         ValueError when toString is called.
         """
         xml = BEAST2XML(template="filename")
-        error = "^Could not find 'data' tag in XML template$"
+        error = "Could not find data tag in XML template."
         assertRaisesRegex(self, ValueError, error, xml.to_string)
 
     @patch(
