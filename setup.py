@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name="beast2-xml",
-    version="1.5.2",
+    version="1.6.0",
     packages=["beast2xml"],
     package_data={"beast2xml": ["templates/*.xml"]},
     url="https://github.com/acorg/beast2-xml",
