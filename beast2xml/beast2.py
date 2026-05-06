@@ -947,6 +947,26 @@ class BEAST2XML(object):
         times = [youngest_tip - year_decimal for year_decimal in year_decimals]
         self.add_rate_change_times(parameter, times)
 
+
+    def _get_skyline_element(self, include_rev_time_array_spec=False):
+        if self.beast_version in ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]:
+            # As of BEAST 2.7.0: 
+            # * the BirthDeathSkylineModel class was moved from beast.evolution.speciation to bdsky.evolution.speciation.
+            # * the BooleanParameter class moved from beast.core.parameter to beast.base.inference.parameter.
+            skyline_element = self._tree.find(
+            "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']")
+            rev_time_array_spec = "beast.core.parameter.BooleanParameter"
+        else:
+            skyline_element = self._tree.find(
+            "./run/distribution/distribution/distribution[@spec='bdsky.evolution.speciation.BirthDeathSkylineModel']")
+            rev_time_array_spec = "beast.base.inference.parameter.BooleanParameter"
+        
+        if include_rev_time_array_spec:
+            return skyline_element, rev_time_array_spec
+        else:
+            return skyline_element
+
+
     def add_rate_change_times(self, parameter, times):
         """
         Add specific times (from the youngest sample) for parameter changes in skyline models.
@@ -965,17 +985,7 @@ class BEAST2XML(object):
          *  https://github.com/BEAST2-Dev/bdsky/issues/35
 
         """
-        if self.beast_version in ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]:
-            # As of BEAST 2.7.0: 
-            # * the BirthDeathSkylineModel class was moved from beast.evolution.speciation to bdsky.evolution.speciation.
-            # * the BooleanParameter class moved from beast.core.parameter to beast.base.inference.parameter.
-            skyline_element = self._tree.find(
-            "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']")
-            rev_time_array_spec = "beast.core.parameter.BooleanParameter"
-        else:
-            skyline_element = self._tree.find(
-            "./run/distribution/distribution/distribution[@spec='bdsky.evolution.speciation.BirthDeathSkylineModel']")
-            rev_time_array_spec = "beast.base.inference.parameter.BooleanParameter"
+        skyline_element, rev_time_array_spec = self._get_skyline_element(include_rev_time_array_spec=True)
         if skyline_element is None:
             raise ValueError(
                 "No distribution of spec BirthDeathSkylineModel was found."
@@ -1223,9 +1233,7 @@ class BEAST2XML(object):
         ---------
         numpy.array
         """
-        skyline_element = self._tree.find(
-            "./run/distribution/distribution/distribution[@spec='beast.evolution.speciation.BirthDeathSkylineModel']"
-        )
+        skyline_element = self._get_skyline_element()
         if skyline_element is None:
             raise ValueError(
                 "No distribution of spec BirthDeathSkylineModel was found."
