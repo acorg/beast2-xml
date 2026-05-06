@@ -31,8 +31,9 @@ setup(
     install_requires=[
         "dark-matter>=1.1.28",
         "pandas>=2.2.2",
-        "ete3>= 3.1.3",
+        "ete3>=3.1.3",
         "six>=1.16.0",
         "numpy>=1.10.0",
+        "legacy-cgi>=2.6.4"
     ],
 )
